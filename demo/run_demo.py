@@ -21,12 +21,11 @@ coco_demo = COCODemo(
 image1 = cv2.imread("/var/maskrcnn-benchmark/datasets/coco/val2017/000000000139.jpg")
 image2 = cv2.imread('/var/maskrcnn-benchmark/datasets/coco/train2017/000000498666.jpg')
 
-pdb.set_trace()
-
 predictions = coco_demo.compute_prediction(image1)
 print(predictions.fields())
 
-image_list = to_image_list([image1, image2], coco_demo.cfg.DATALOADER.SIZE_DIVISIBILITY)
+image_list = [coco_demo.transforms(image) for image in [image1, image2]]
+image_list = to_image_list(image_list, coco_demo.cfg.DATALOADER.SIZE_DIVISIBILITY)
 image_list = image_list.to(coco_demo.device)
 with torch.no_grad():
 	predictions = coco_demo.model(image_list)
