@@ -2,6 +2,7 @@ from maskrcnn_benchmark.config import cfg
 from predictor import COCODemo
 from maskrcnn_benchmark.structures.image_list import to_image_list
 
+import torch
 import cv2
 import pdb
 
