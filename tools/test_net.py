@@ -28,6 +28,12 @@ def main():
     )
     parser.add_argument("--local_rank", type=int, default=0)
     parser.add_argument(
+        "--gpu_ids",
+        default="-1",
+        help="gpu id",
+        type=str,
+    )
+    parser.add_argument(
         "opts",
         help="Modify config options using the command-line",
         default=None,
@@ -35,6 +41,8 @@ def main():
     )
 
     args = parser.parse_args()
+    if args.gpu_ids != '-1':
+        os.environ["CUDA_VISIBLE_DEVICES"] = args.gpu_ids
 
     num_gpus = int(os.environ["WORLD_SIZE"]) if "WORLD_SIZE" in os.environ else 1
     distributed = num_gpus > 1
