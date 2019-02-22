@@ -8,6 +8,8 @@ from maskrcnn_benchmark.structures.boxlist_ops import boxlist_nms
 from maskrcnn_benchmark.structures.boxlist_ops import cat_boxlist
 from maskrcnn_benchmark.modeling.box_coder import BoxCoder
 
+import pdb
+
 
 class PostProcessor(nn.Module):
     """
@@ -40,13 +42,14 @@ class PostProcessor(nn.Module):
         self.box_coder = box_coder
         self.cls_agnostic_bbox_reg = cls_agnostic_bbox_reg
 
-    def forward(self, x, boxes):
+    def forward(self, x, boxes, features):
         """
         Arguments:
             x (tuple[tensor, tensor]): x contains the class logits
                 and the box_regression from the model.
             boxes (list[BoxList]): bounding boxes that are used as
-                reference, one for ech image
+                reference, one for each image
+            features (tensor): features that are used for prediction
 
         Returns:
             results (list[BoxList]): one BoxList for each image, containing
@@ -72,18 +75,21 @@ class PostProcessor(nn.Module):
 
         proposals = proposals.split(boxes_per_image, dim=0)
         class_prob = class_prob.split(boxes_per_image, dim=0)
+        features = features.split(boxes_per_image, dim=0)
+
+        pdb.set_trace()
 
         results = []
-        for prob, boxes_per_img, image_shape in zip(
-            class_prob, proposals, image_shapes
+        for prob, boxes_per_img, image_shape, feature in zip(
+            class_prob, proposals, image_shapes, features
         ):
-            boxlist = self.prepare_boxlist(boxes_per_img, prob, image_shape)
+            boxlist = self.prepare_boxlist(boxes_per_img, prob, image_shape, feature)
             boxlist = boxlist.clip_to_image(remove_empty=False)
             boxlist = self.filter_results(boxlist, num_classes)
             results.append(boxlist)
         return results
 
-    def prepare_boxlist(self, boxes, scores, image_shape):
+    def prepare_boxlist(self, boxes, scores, image_shape, feature):
         """
         Returns BoxList from `boxes` and adds probability scores information
         as an extra field
@@ -100,6 +106,7 @@ class PostProcessor(nn.Module):
         scores = scores.reshape(-1)
         boxlist = BoxList(boxes, image_shape, mode="xyxy")
         boxlist.add_field("scores", scores)
+        boxlist.add_field("feature", feature)
         return boxlist
 
     def filter_results(self, boxlist, num_classes):
