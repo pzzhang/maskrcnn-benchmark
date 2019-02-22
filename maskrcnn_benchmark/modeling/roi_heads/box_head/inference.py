@@ -77,22 +77,20 @@ class PostProcessor(nn.Module):
         class_prob = class_prob.split(boxes_per_image, dim=0)
         features = features.split(boxes_per_image, dim=0)
 
-        pdb.set_trace()
-
         results = []
         for prob, boxes_per_img, image_shape, feature in zip(
             class_prob, proposals, image_shapes, features
         ):
-            boxlist = self.prepare_boxlist(boxes_per_img, prob, image_shape, feature)
+            boxlist = self.prepare_boxlist(boxes_per_img, prob, image_shape)
             boxlist = boxlist.clip_to_image(remove_empty=False)
-            boxlist = self.filter_results(boxlist, num_classes)
+            boxlist = self.filter_results(boxlist, num_classes, feature)
             results.append(boxlist)
 
         pdb.set_trace()
-        
+
         return results
 
-    def prepare_boxlist(self, boxes, scores, image_shape, feature):
+    def prepare_boxlist(self, boxes, scores, image_shape):
         """
         Returns BoxList from `boxes` and adds probability scores information
         as an extra field
@@ -109,10 +107,9 @@ class PostProcessor(nn.Module):
         scores = scores.reshape(-1)
         boxlist = BoxList(boxes, image_shape, mode="xyxy")
         boxlist.add_field("scores", scores)
-        boxlist.add_field("feature", feature)
         return boxlist
 
-    def filter_results(self, boxlist, num_classes):
+    def filter_results(self, boxlist, num_classes, feature):
         """Returns bounding-box detection results by thresholding on scores and
         applying non-maximum suppression (NMS).
         """
@@ -129,9 +126,11 @@ class PostProcessor(nn.Module):
         for j in range(1, num_classes):
             inds = inds_all[:, j].nonzero().squeeze(1)
             scores_j = scores[inds, j]
+            feature_j = feature[inds]
             boxes_j = boxes[inds, j * 4 : (j + 1) * 4]
             boxlist_for_class = BoxList(boxes_j, boxlist.size, mode="xyxy")
             boxlist_for_class.add_field("scores", scores_j)
+            boxlist_for_class.add_field("feature", feature_j)
             boxlist_for_class = boxlist_nms(
                 boxlist_for_class, self.nms
             )
