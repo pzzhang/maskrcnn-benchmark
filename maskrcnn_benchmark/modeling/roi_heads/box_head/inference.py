@@ -87,6 +87,9 @@ class PostProcessor(nn.Module):
             boxlist = boxlist.clip_to_image(remove_empty=False)
             boxlist = self.filter_results(boxlist, num_classes)
             results.append(boxlist)
+
+        pdb.set_trace()
+        
         return results
 
     def prepare_boxlist(self, boxes, scores, image_shape, feature):
