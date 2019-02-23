@@ -5,6 +5,7 @@ from maskrcnn_benchmark.structures.image_list import to_image_list
 import torch
 import cv2
 import pdb
+import time
 
 config_file = "../configs/caffe2/e2e_mask_rcnn_R_50_FPN_1x_caffe2.yaml"
 
@@ -25,10 +26,13 @@ image2 = cv2.imread('/var/maskrcnn-benchmark/datasets/coco/train2017/00000049866
 predictions = coco_demo.compute_prediction(image1)
 print(predictions.fields())
 
+t0 = time.time()
 image_list = [coco_demo.transforms(image) for image in [image1, image2]]
 image_list = to_image_list(image_list, coco_demo.cfg.DATALOADER.SIZE_DIVISIBILITY)
 image_list = image_list.to(coco_demo.device)
 with torch.no_grad():
 	predictions = coco_demo.model(image_list)
+t1 = time.time()
+print(t1-t0)
 
 pdb.set_trace()

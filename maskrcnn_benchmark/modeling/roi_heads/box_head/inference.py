@@ -86,7 +86,7 @@ class PostProcessor(nn.Module):
             boxlist = self.filter_results(boxlist, num_classes, feature)
             results.append(boxlist)
 
-        pdb.set_trace()
+        # pdb.set_trace()
 
         return results
 
@@ -130,7 +130,7 @@ class PostProcessor(nn.Module):
             boxes_j = boxes[inds, j * 4 : (j + 1) * 4]
             boxlist_for_class = BoxList(boxes_j, boxlist.size, mode="xyxy")
             boxlist_for_class.add_field("scores", scores_j)
-            boxlist_for_class.add_field("feature", feature_j)
+            boxlist_for_class.add_field("box_feature", feature_j)
             boxlist_for_class = boxlist_nms(
                 boxlist_for_class, self.nms
             )
