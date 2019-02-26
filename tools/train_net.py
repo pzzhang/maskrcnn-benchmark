@@ -25,6 +25,8 @@ from maskrcnn_benchmark.utils.imports import import_file
 from maskrcnn_benchmark.utils.logger import setup_logger
 from maskrcnn_benchmark.utils.miscellaneous import mkdir
 
+import pdb
+
 
 def train(cfg, local_rank, distributed):
     model = build_detection_model(cfg)
@@ -104,6 +106,7 @@ def run_test(cfg, model, distributed):
             expected_results=cfg.TEST.EXPECTED_RESULTS,
             expected_results_sigma_tol=cfg.TEST.EXPECTED_RESULTS_SIGMA_TOL,
             output_folder=output_folder,
+            has_attribute=cfg.MODEL.HAS_ATTRIBUTE,
         )
         synchronize()
 
@@ -118,6 +121,20 @@ def main():
         type=str,
     )
     parser.add_argument("--local_rank", type=int, default=0)
+    parser.add_argument(
+        "--data-dir",
+        default=".",
+        metavar="DIR",
+        help="data dir for training",
+        type=str,
+    )
+    parser.add_argument(
+        "--out-dir",
+        default=".",
+        metavar="DIR",
+        help="output dir for model",
+        type=str,
+    )
     parser.add_argument(
         "--gpu_ids",
         default="-1",
@@ -153,6 +170,13 @@ def main():
 
     cfg.merge_from_file(args.config_file)
     cfg.merge_from_list(args.opts)
+    cfg.OUTPUT_DIR = args.out_dir + cfg.OUTPUT_DIR[1:]
+    cfg.MODEL.WEIGHT = args.out_dir + cfg.MODEL.WEIGHT[1:]
+    cfg.DATA_DIR = args.data_dir + cfg.DATA_DIR[1:]
+    print("cfg.OUTPUT_DIR: ", cfg.OUTPUT_DIR)
+    print("cfg.MODEL.WEIGHT: ", cfg.MODEL.WEIGHT)
+    print("cfg.DATA_DIR: ", cfg.DATA_DIR)
+    print("cfg.MODEL.HAS_ATTRIBUTE: ", cfg.MODEL.HAS_ATTRIBUTE)
     cfg.freeze()
 
     output_dir = cfg.OUTPUT_DIR
