@@ -19,11 +19,12 @@ class FastRCNNLossComputation(object):
     """
 
     def __init__(
-        self, 
+        self,
         proposal_matcher, 
         fg_bg_sampler, 
         box_coder, 
-        cls_agnostic_bbox_reg=False
+        cls_agnostic_bbox_reg=False,
+        attribute_on=False
     ):
         """
         Arguments:
@@ -35,16 +36,22 @@ class FastRCNNLossComputation(object):
         self.fg_bg_sampler = fg_bg_sampler
         self.box_coder = box_coder
         self.cls_agnostic_bbox_reg = cls_agnostic_bbox_reg
+        self.attribute_on = attribute_on
 
     def match_targets_to_proposals(self, proposal, target):
         match_quality_matrix = boxlist_iou(target, proposal)
         matched_idxs = self.proposal_matcher(match_quality_matrix)
         # Fast RCNN only need "labels" field for selecting the targets
-        target = target.copy_with_fields("labels")
+        # if target.has_field("attributes"):
+        if self.attribute_on:
+            target = target.copy_with_fields(["labels", "attributes"])
+        else:
+            target = target.copy_with_fields("labels")
         # get the targets corresponding GT for each proposal
         # NB: need to clamp the indices because we can have a single
         # GT in the image, and matched_idxs can be -2, which goes
-        # out of bounds
+        # out of bounds 
+        # need special treatment for this when computing the loss
         matched_targets = target[matched_idxs.clamp(min=0)]
         matched_targets.add_field("matched_idxs", matched_idxs)
         return matched_targets
@@ -52,6 +59,9 @@ class FastRCNNLossComputation(object):
     def prepare_targets(self, proposals, targets):
         labels = []
         regression_targets = []
+        # if targets[0].has_field('attributes'):
+        if self.attribute_on:
+            attributes = []
         for proposals_per_image, targets_per_image in zip(proposals, targets):
             matched_targets = self.match_targets_to_proposals(
                 proposals_per_image, targets_per_image
@@ -74,10 +84,28 @@ class FastRCNNLossComputation(object):
                 matched_targets.bbox, proposals_per_image.bbox
             )
 
+            # return lables and regression targets
             labels.append(labels_per_image)
             regression_targets.append(regression_targets_per_image)
 
-        return labels, regression_targets
+            # compute attributes
+            # if matched_targets.has_field("attributes"):
+            if self.attribute_on:
+                attributes_per_image = matched_targets.get_field("attributes")
+                attributes_per_image = attributes_per_image.to(dtype=torch.int64)
+                # Label background (below the low threshold)
+                # attribute 0 is ignored in the loss
+                attributes_per_image[bg_inds,:] = 0
+                # Label ignore proposals (between low and high thresholds)
+                attributes_per_image[ignore_inds,:] = 0  
+                # return attributes
+                attributes.append(attributes_per_image)
+
+        # if targets[0].has_field('attributes'):
+        if self.attribute_on:
+            return labels, regression_targets, attributes
+        else:
+            return labels, regression_targets
 
     def subsample(self, proposals, targets):
         """
@@ -89,19 +117,37 @@ class FastRCNNLossComputation(object):
             proposals (list[BoxList])
             targets (list[BoxList])
         """
+        ## TODO: This function can be simplified a lot!
 
-        labels, regression_targets = self.prepare_targets(proposals, targets)
+        # if targets[0].has_field("attributes"):
+        if self.attribute_on:
+            labels, regression_targets, attributes = self.prepare_targets(proposals, targets)
+        else:
+            labels, regression_targets = self.prepare_targets(proposals, targets)
         sampled_pos_inds, sampled_neg_inds = self.fg_bg_sampler(labels)
 
         proposals = list(proposals)
-        # add corresponding label and regression_targets information to the bounding boxes
-        for labels_per_image, regression_targets_per_image, proposals_per_image in zip(
-            labels, regression_targets, proposals
-        ):
-            proposals_per_image.add_field("labels", labels_per_image)
-            proposals_per_image.add_field(
-                "regression_targets", regression_targets_per_image
-            )
+
+        # if targets[0].has_field("attributes"):
+        if self.attribute_on:
+            # add corresponding label, regression_targets and attribute information to the bounding boxes
+            for labels_per_image, regression_targets_per_image, attributes_per_image, proposals_per_image in zip(
+                labels, regression_targets, attributes, proposals
+            ):
+                proposals_per_image.add_field("labels", labels_per_image)
+                proposals_per_image.add_field(
+                    "regression_targets", regression_targets_per_image
+                )
+                proposals_per_image.add_field("attributes", attributes_per_image)
+        else:
+            # add corresponding label and regression_targets information to the bounding boxes
+            for labels_per_image, regression_targets_per_image, proposals_per_image in zip(
+                labels, regression_targets, proposals
+            ):
+                proposals_per_image.add_field("labels", labels_per_image)
+                proposals_per_image.add_field(
+                    "regression_targets", regression_targets_per_image
+                )
 
         # distributed sampled proposals, that were obtained on all feature maps
         # concatenated via the fg_bg_sampler, into individual feature map levels
@@ -182,12 +228,14 @@ def make_roi_box_loss_evaluator(cfg):
     )
 
     cls_agnostic_bbox_reg = cfg.MODEL.CLS_AGNOSTIC_BBOX_REG
+    attribute_on = cfg.MODEL.ATTRIBUTE_ON
 
     loss_evaluator = FastRCNNLossComputation(
         matcher, 
         fg_bg_sampler, 
         box_coder, 
-        cls_agnostic_bbox_reg
+        cls_agnostic_bbox_reg,
+        attribute_on
     )
 
     return loss_evaluator
