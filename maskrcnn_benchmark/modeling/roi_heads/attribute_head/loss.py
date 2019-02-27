@@ -34,11 +34,9 @@ class AttributeRCNNLossComputation(object):
 
     def cross_entropy(self, pred, soft_targets, loss_type="softmax"):
         if loss_type == "sigmoid":
-            logsigmoid = F.logsigmoid()
-            return torch.mean(torch.sum(- soft_targets * logsigmoid(pred), 1))
+            return torch.mean(torch.sum(- soft_targets * F.logsigmoid(pred), 1))
 
-        logsoftmax = F.log_softmax()
-        return torch.mean(torch.sum(- soft_targets * logsoftmax(pred), 1))
+        return torch.mean(torch.sum(- soft_targets * F.log_softmax(pred), 1))
 
 
 def make_roi_attribute_loss_evaluator(cfg):
