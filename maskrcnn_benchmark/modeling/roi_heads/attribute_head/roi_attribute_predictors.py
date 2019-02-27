@@ -18,7 +18,7 @@ class AttributeRCNNPredictor(nn.Module):
         self.avgpool = nn.AdaptiveAvgPool2d(1)
         self.cls_embedding=nn.Embedding(num_classes, cls_emd_dim)
         self.fc_attr=nn.Linear(in_channels+cls_emd_dim, attr_emd_dim)
-        self.attr_score=nn.Linear(attr_emd_dim, self.num_attributes) 
+        self.attr_score=nn.Linear(attr_emd_dim, num_attributes) 
 
         nn.init.normal_(self.cls_embedding.weight, mean=0, std=0.01)
         nn.init.normal_(self.fc_attr.weight, mean=0, std=0.01)
@@ -49,7 +49,7 @@ class AttributeFPNPredictor(nn.Module):
 
         self.cls_embedding=nn.Embedding(num_classes, cls_emd_dim)
         self.fc_attr=nn.Linear(in_channels+cls_emd_dim, attr_emd_dim)
-        self.attr_score=nn.Linear(attr_emd_dim, self.num_attributes) 
+        self.attr_score=nn.Linear(attr_emd_dim, num_attributes) 
 
         nn.init.normal_(self.cls_embedding.weight, mean=0, std=0.01)
         nn.init.normal_(self.fc_attr.weight, mean=0, std=0.01)
