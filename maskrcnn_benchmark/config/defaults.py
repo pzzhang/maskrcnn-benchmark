@@ -440,5 +440,6 @@ _C.TEST.DETECTIONS_PER_IMG = 100
 # Misc options
 # ---------------------------------------------------------------------------- #
 _C.OUTPUT_DIR = "."
+_C.DATA_DIR = "./datasets"
 
 _C.PATHS_CATALOG = os.path.join(os.path.dirname(__file__), "paths_catalog.py")
