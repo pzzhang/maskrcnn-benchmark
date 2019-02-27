@@ -24,8 +24,8 @@ INPUT:
   MIN_SIZE_TEST: 600
   MAX_SIZE_TEST: 1000
 DATASETS:
-  TRAIN: ("vg_train",)
-  TEST: ("vg_val",)
+  TRAIN: ("vg_minitrain",)
+  TEST: ("vg_minival",)
 SOLVER:
   BASE_LR: 0.001
   WEIGHT_DECAY: 0.0005
