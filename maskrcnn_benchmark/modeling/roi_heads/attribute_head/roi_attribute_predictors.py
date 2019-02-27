@@ -35,7 +35,7 @@ class AttributeRCNNPredictor(nn.Module):
         concat_pool5=torch.cat([pool5_flat,cls_embedding],1)
         fc_attr=F.relu(self.fc_attr(concat_pool5))
 
-        return self.attr_score(fc_attr)
+        return self.attr_score(fc_attr), fc_attr
 
 
 @registry.ROI_ATTRIBUTE_PREDICTOR.register("AttributeFPNPredictor")
