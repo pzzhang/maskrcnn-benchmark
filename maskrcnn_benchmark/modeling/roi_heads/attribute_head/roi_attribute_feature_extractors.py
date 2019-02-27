@@ -1,5 +1,5 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
-from ..box_head.roi_box_feature_extractors import all
+from ..box_head.roi_box_feature_extractors import *
 from maskrcnn_benchmark.modeling import registry
 
 
