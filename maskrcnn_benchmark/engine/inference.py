@@ -115,11 +115,46 @@ def inference(
         if flag_attribute:
             torch.save(predictions_attribute, os.path.join(output_folder, "predictions_attribute.pth"))
 
-    extra_args = dict(
-        box_only=box_only,
-        iou_types=iou_types,
-        expected_results=expected_results,
-        expected_results_sigma_tol=expected_results_sigma_tol,
-    )
+    if not dataset_name.startswith("vg"):
+        extra_args = dict(
+            box_only=box_only,
+            iou_types=iou_types,
+            expected_results=expected_results,
+            expected_results_sigma_tol=expected_results_sigma_tol,
+        )
+
+        return evaluate(dataset=dataset,
+                        predictions=predictions,
+                        output_folder=output_folder,
+                        **extra_args)
+    else:  ## vg dataset
+
+        extra_args = dict(
+            box_only=box_only,
+            eval_attributes=False,
+            iou_types=iou_types,
+            expected_results=expected_results,
+            expected_results_sigma_tol=expected_results_sigma_tol,
+        )
+
+        object_evaluation =  evaluate(dataset=dataset,
+                                      predictions=predictions,
+                                      output_folder=output_folder,
+                                      **extra_args)
+
+        if has_attribute:
+            extra_args = dict(
+                box_only=box_only,
+                eval_attributes=True,
+                iou_types=iou_types,
+                expected_results=expected_results,
+                expected_results_sigma_tol=expected_results_sigma_tol,
+            )
+
+            attribute_evaluation = evaluate(dataset=dataset,
+                                            predictions=predictions_attribute,
+                                            output_folder=output_folder,
+                                            **extra_args)
+            return dict(object_evaluation=object_evaluation, attribute_evaluation=attribute_evaluation)
 
         return object_evaluation
