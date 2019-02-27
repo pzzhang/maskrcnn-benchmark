@@ -4,7 +4,7 @@ MODEL:
   # WEIGHT: "catalog://ImageNetPretrained/MSRA/R-50"
   BACKBONE:
     CONV_BODY: "R-50-C4"
-  HAS_ATTRIBUTE: True
+  ATTRIBUTE_ON: True
   RPN:
     BATCH_SIZE_PER_IMAGE: 256
     PRE_NMS_TOP_N_TEST: 6000
