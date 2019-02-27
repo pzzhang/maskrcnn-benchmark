@@ -106,7 +106,7 @@ def run_test(cfg, model, distributed):
             expected_results=cfg.TEST.EXPECTED_RESULTS,
             expected_results_sigma_tol=cfg.TEST.EXPECTED_RESULTS_SIGMA_TOL,
             output_folder=output_folder,
-            has_attribute=cfg.MODEL.HAS_ATTRIBUTE,
+            has_attribute=cfg.MODEL.ATTRIBUTE_ON,
         )
         synchronize()
 
@@ -176,7 +176,7 @@ def main():
     print("cfg.OUTPUT_DIR: ", cfg.OUTPUT_DIR)
     print("cfg.MODEL.WEIGHT: ", cfg.MODEL.WEIGHT)
     print("cfg.DATA_DIR: ", cfg.DATA_DIR)
-    print("cfg.MODEL.HAS_ATTRIBUTE: ", cfg.MODEL.HAS_ATTRIBUTE)
+    print("cfg.MODEL.ATTRIBUTE_ON: ", cfg.MODEL.HAS_ATTRIBUTE)
     cfg.freeze()
 
     output_dir = cfg.OUTPUT_DIR
