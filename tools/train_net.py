@@ -176,7 +176,7 @@ def main():
     print("cfg.OUTPUT_DIR: ", cfg.OUTPUT_DIR)
     print("cfg.MODEL.WEIGHT: ", cfg.MODEL.WEIGHT)
     print("cfg.DATA_DIR: ", cfg.DATA_DIR)
-    print("cfg.MODEL.ATTRIBUTE_ON: ", cfg.MODEL.HAS_ATTRIBUTE)
+    print("cfg.MODEL.ATTRIBUTE_ON: ", cfg.MODEL.ATTRIBUTE_ON)
     cfg.freeze()
 
     output_dir = cfg.OUTPUT_DIR
