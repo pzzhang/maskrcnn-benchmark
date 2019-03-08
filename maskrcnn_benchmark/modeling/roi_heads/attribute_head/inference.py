@@ -19,8 +19,9 @@ class AttributePostProcessor(nn.Module):
 
     def __init__(self, cfg):
         super(AttributePostProcessor, self).__init__()
-        self.max_num_attr = cfg.MODEL.ROI_ATTRIBUTE_HEAD.MAX_NUM_ATTR_PER_OBJ
-        # self.attr_thresh = cfg.MODEL.ROI_ATTRIBUTE_HEAD.POSTPROCESS_ATTRIBUTES_THRESHOLD
+        self.max_num_attr = cfg.MODEL.ROI_ATTRIBUTE_HEAD.MAX_NUM_ATTR_PER_IMG
+        self.attr_thresh = cfg.MODEL.ROI_ATTRIBUTE_HEAD.POSTPROCESS_ATTRIBUTES_THRESHOLD
+        self.output_feature = cfg.TEST.OUTPUT_FEATURE
 
     def forward(self, x, boxes, features):
         """
@@ -28,32 +29,63 @@ class AttributePostProcessor(nn.Module):
             x (Tensor): the attribute logits
             boxes (list[BoxList]): bounding boxes that are used as
                 reference, one for each image
+            features (Tensor) : attribute features
 
         Returns:
             results (list[BoxList]): one BoxList for each image, containing
                 the extra field attribute
         """
-        attribute_prob = F.softmax(x, -1)
-        # apply filter
-        attribute_prob, attribute_inds = torch.sort(attribute_prob, descending=True)
-        attribute_prob = attribute_prob[:, :self.max_num_attr]
-        attribute_inds = attribute_inds[:, :self.max_num_attr]
-
         boxes_per_image = [len(box) for box in boxes]
-        attribute_prob = attribute_prob.split(boxes_per_image, dim=0)
-        attribute_inds = attribute_inds.split(boxes_per_image, dim=0)
+        attribute_probs = F.softmax(x, -1)
+        num_classes = attribute_probs.shape[1]
+
+        attribute_probs = attribute_probs.split(boxes_per_image, dim=0)
         features = features.split(boxes_per_image, dim=0)
 
         results = []
-        for attr_ind, box, feature in zip(attribute_inds, boxes, features):
-            bbox = BoxList(box.bbox, box.size, mode="xyxy")
+        for box, prob, feature in zip(boxes, attribute_probs, features):
+            # copy the current boxes
+            boxlist = BoxList(box.bbox, box.size, mode="xyxy")
             for field in box.fields():
-                bbox.add_field(field, box.get_field(field))
-            bbox.add_field("attribute", attr_ind)
-            bbox.add_field("attr_feature", feature)
-            results.append(bbox)
+                boxlist.add_field(field, box.get_field(field))
+            if self.output_feature:
+                boxlist.add_field('attr_feature') = feature
+            # filter out low probability and redundent boxes
+            boxlist = self.filter_results(boxlist, prob, feature, num_classes)
+            results.append(boxlist)
 
         return results
+
+    def filter_results(self, boxlist, prob, feature, num_classes):
+        """Returns feature detection results by thresholding on scores.
+        """
+        boxes = boxlist.bbox.reshape(-1, 4)
+        scores = prob.reshape(-1, num_classes)
+
+        device = scores.device
+        result = []
+        # Apply threshold on detection probabilities
+        # Skip j = 0, because it's the background class
+        scores[:, 0] = 0.0
+        # filter by the attr_thresh
+        inds_all = scores>self.attr_thresh
+        number_of_detections = inds_all.sum().item()
+        scores[1-inds_all] = 0.0
+        # filter by max_num_attr_per_img
+        if number_of_detections > self.max_num_attr > 0:
+            attr_thresh, _ = torch.kthvalue(
+                scores.flatten().cpu(), number_of_detections - self.max_num_attr + 1
+            )
+            scores[scores<attr_thresh.item()] = 0.0
+
+        attr_labels = []
+        attr_scores = []
+        for score in scores:
+            attr_labels.append(score.nonzero().squeeze(1))
+            attr_scores.append(score[attr_labels[-1]])
+        boxlist.add_field('attr_labels') = attr_labels
+        boxlist.add_field('attr_scores') = attr_scores
+        return boxlist
 
 
 def make_roi_attribute_post_processor(cfg):

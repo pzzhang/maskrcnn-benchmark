@@ -24,10 +24,10 @@ class CombinedROIHeads(torch.nn.ModuleDict):
         if cfg.MODEL.KEYPOINT_ON and cfg.MODEL.ROI_KEYPOINT_HEAD.SHARE_BOX_FEATURE_EXTRACTOR:
             self.keypoint.feature_extractor = self.box.feature_extractor
 
-    def forward(self, features, proposals, targets=None):
+    def forward(self, features, proposals, targets=None, force_boxes=False):
         losses = {}
         # TODO rename x to roi_box_features, if it doesn't increase memory consumption
-        x, detections, loss_box = self.box(features, proposals, targets)
+        x, detections, loss_box = self.box(features, proposals, targets, force_boxes)
         losses.update(loss_box)
 
         if self.cfg.MODEL.ATTRIBUTE_ON:
@@ -37,6 +37,8 @@ class CombinedROIHeads(torch.nn.ModuleDict):
                 and self.cfg.MODEL.ROI_ATTRIBUTE_HEAD.SHARE_BOX_FEATURE_EXTRACTOR
             ):
                 attribute_features = x
+            else:
+                attribute_features = features
             # During training, self.box() will return the unaltered proposals as "detections"
             # this makes the API consistent during training and testing
             x_attr, detections, loss_attribute = self.attribute(attribute_features, detections, targets)
@@ -51,6 +53,8 @@ class CombinedROIHeads(torch.nn.ModuleDict):
                 and self.cfg.MODEL.ROI_MASK_HEAD.SHARE_BOX_FEATURE_EXTRACTOR
             ):
                 mask_features = x
+            else:
+                mask_features = features
             # During training, self.box() will return the unaltered proposals as "detections"
             # this makes the API consistent during training and testing
             x_mask, detections, loss_mask = self.mask(mask_features, detections, targets)
@@ -65,6 +69,8 @@ class CombinedROIHeads(torch.nn.ModuleDict):
                 and self.cfg.MODEL.ROI_KEYPOINT_HEAD.SHARE_BOX_FEATURE_EXTRACTOR
             ):
                 keypoint_features = x
+            else:
+                keypoint_features = features
             # During training, self.box() will return the unaltered proposals as "detections"
             # this makes the API consistent during training and testing
             x_keypoint, detections, loss_keypoint = self.keypoint(keypoint_features, detections, targets)

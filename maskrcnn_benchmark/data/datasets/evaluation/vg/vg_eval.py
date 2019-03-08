@@ -162,7 +162,10 @@ def calc_detection_voc_prec_rec(pred_boxlists, gt_boxlists, classindex, iou_thre
                                    'det': det}
 
         # prediction output for each class
-        pred_mask_l = pred_label == classindex
+        if eval_attributes:
+            pred_mask_l = np.array([classindex in i for i in pred_label])
+        else:
+            pred_mask_l = pred_label == classindex
         pred_bbox_l = pred_bbox[pred_mask_l]
         pred_score_l = pred_score[pred_mask_l]
 

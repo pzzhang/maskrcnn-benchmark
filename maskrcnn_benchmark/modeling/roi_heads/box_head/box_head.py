@@ -21,7 +21,7 @@ class ROIBoxHead(torch.nn.Module):
         self.post_processor = make_roi_box_post_processor(cfg)
         self.loss_evaluator = make_roi_box_loss_evaluator(cfg)
 
-    def forward(self, features, proposals, targets=None):
+    def forward(self, features, proposals, targets=None, force_boxes=False):
         """
         Arguments:
             features (list[Tensor]): feature-maps from possibly several levels
@@ -50,7 +50,7 @@ class ROIBoxHead(torch.nn.Module):
         class_logits, box_regression = self.predictor(x)
 
         if not self.training:
-            result = self.post_processor((class_logits, box_regression), proposals, x)
+            result = self.post_processor((class_logits, box_regression), proposals, x, force_boxes)
             return x, result, {}
 
         loss_classifier, loss_box_reg = self.loss_evaluator(
