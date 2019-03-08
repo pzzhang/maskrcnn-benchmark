@@ -427,7 +427,7 @@ _C.SOLVER.IMS_PER_BATCH = 16
 # ---------------------------------------------------------------------------- #
 _C.TEST = CN()
 # __C.TEST.FORCE_BOXES = False
-__C.TEST.OUTPUT_FEATURE = False
+_C.TEST.OUTPUT_FEATURE = False
 _C.TEST.EXPECTED_RESULTS = []
 _C.TEST.EXPECTED_RESULTS_SIGMA_TOL = 4
 # Number of images per batch
