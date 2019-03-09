@@ -95,21 +95,21 @@ def run_test(cfg, model, distributed):
             mkdir(output_folder)
             output_folders[idx] = output_folder
     # evaluate object detection
-    # data_loaders_val = make_data_loader(cfg, is_train=False, is_distributed=distributed)
-    # for output_folder, dataset_name, data_loader_val in zip(output_folders, dataset_names, data_loaders_val):
-    #     inference(
-    #         model,
-    #         data_loader_val,
-    #         dataset_name=dataset_name,
-    #         iou_types=iou_types,
-    #         box_only=False if cfg.MODEL.RETINANET_ON else cfg.MODEL.RPN_ONLY,
-    #         device=cfg.MODEL.DEVICE,
-    #         expected_results=cfg.TEST.EXPECTED_RESULTS,
-    #         expected_results_sigma_tol=cfg.TEST.EXPECTED_RESULTS_SIGMA_TOL,
-    #         output_folder=output_folder,
-    #         eval_attributes=False,
-    #     )
-    #     synchronize()
+    data_loaders_val = make_data_loader(cfg, is_train=False, is_distributed=distributed)
+    for output_folder, dataset_name, data_loader_val in zip(output_folders, dataset_names, data_loaders_val):
+        inference(
+            model,
+            data_loader_val,
+            dataset_name=dataset_name,
+            iou_types=iou_types,
+            box_only=False if cfg.MODEL.RETINANET_ON else cfg.MODEL.RPN_ONLY,
+            device=cfg.MODEL.DEVICE,
+            expected_results=cfg.TEST.EXPECTED_RESULTS,
+            expected_results_sigma_tol=cfg.TEST.EXPECTED_RESULTS_SIGMA_TOL,
+            output_folder=output_folder,
+            eval_attributes=False,
+        )
+        synchronize()
     # evaluate attribute detection
     data_loaders_val = make_data_loader(cfg, is_train=False, is_distributed=distributed)
     for output_folder, dataset_name, data_loader_val in zip(output_folders, dataset_names, data_loaders_val):
