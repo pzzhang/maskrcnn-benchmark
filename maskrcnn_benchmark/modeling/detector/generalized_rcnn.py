@@ -12,6 +12,7 @@ from maskrcnn_benchmark.structures.bounding_box import BoxList
 from ..backbone import build_backbone
 from ..rpn.rpn import build_rpn
 from ..roi_heads.roi_heads import build_roi_heads
+import pdb
 
 
 class GeneralizedRCNN(nn.Module):
@@ -55,6 +56,7 @@ class GeneralizedRCNN(nn.Module):
         else:
             proposals, proposal_losses = self.rpn(images, features, targets)
             
+        pdb.set_trace()
         if self.roi_heads:
             x, result, detector_losses = self.roi_heads(features, proposals, targets, force_boxes)
         else:
