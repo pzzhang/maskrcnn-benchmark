@@ -85,9 +85,9 @@ def main():
             output_folder = os.path.join(cfg.OUTPUT_DIR, "inference", dataset_name)
             mkdir(output_folder)
             output_folders[idx] = output_folder
+    # evaluate object detection
     data_loaders_val = make_data_loader(cfg, is_train=False, is_distributed=distributed)
     for output_folder, dataset_name, data_loader_val in zip(output_folders, dataset_names, data_loaders_val):
-        # evaluate object detection
         inference(
             model,
             data_loader_val,
@@ -101,7 +101,9 @@ def main():
             eval_attributes=False,
         )
         synchronize()
-        # evaluate attribute detection
+    # evaluate attribute detection
+    data_loaders_val = make_data_loader(cfg, is_train=False, is_distributed=distributed)
+    for output_folder, dataset_name, data_loader_val in zip(output_folders, dataset_names, data_loaders_val):
         inference(
             model,
             data_loader_val,
