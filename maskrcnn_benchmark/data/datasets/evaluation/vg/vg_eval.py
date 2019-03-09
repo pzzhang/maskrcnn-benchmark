@@ -165,7 +165,7 @@ def calc_detection_voc_prec_rec(pred_boxlists, gt_boxlists, classindex, iou_thre
                                    'det': det}
 
         # prediction output for each class
-        pdb.set_trace()
+        # pdb.set_trace()
         if eval_attributes:
             pred_mask_l = (pred_label==classindex).nonzero()
             pred_bbox_l = pred_bbox[pred_mask_l[:,0]]
