@@ -43,5 +43,5 @@ SOLVER:
 #   WARMUP_ITERS: 0
 DATALOADER:
   NUM_WORKERS: 4
-OUTPUT_DIR: "./models/detection_with_attribute_bs16"
+OUTPUT_DIR: "./models/detection_with_attribute_bs8"
 DATA_DIR: "./datasets"
