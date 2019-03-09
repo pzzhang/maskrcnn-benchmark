@@ -167,9 +167,9 @@ def calc_detection_voc_prec_rec(pred_boxlists, gt_boxlists, classindex, iou_thre
         # prediction output for each class
         pdb.set_trace()
         if eval_attributes:
-            pred_mask_l = (pred_label==classindex).nonzero()
-            pred_bbox_l = pred_bbox[pred_mask_l[:,0]]
-            pred_score_l = pred_score[pred_label==classindex]
+            pred_mask_l = np.logical_and(pred_label==classindex, np.not_equal(pred_score, 0.0)).nonzero()
+            pred_bbox_l = pred_bbox[pred_mask_l[0]]
+            pred_score_l = pred_score[pred_mask_l]
         else:
             pred_mask_l = pred_label == classindex
             pred_bbox_l = pred_bbox[pred_mask_l]
