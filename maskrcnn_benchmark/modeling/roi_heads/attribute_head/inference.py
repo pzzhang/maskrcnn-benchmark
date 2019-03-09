@@ -20,6 +20,7 @@ class AttributePostProcessor(nn.Module):
     def __init__(self, cfg):
         super(AttributePostProcessor, self).__init__()
         self.max_num_attr = cfg.MODEL.ROI_ATTRIBUTE_HEAD.MAX_NUM_ATTR_PER_IMG
+        self.max_num_attr_per_obj = cfg.MODEL.ROI_ATTRIBUTE_HEAD.MAX_NUM_ATTR_PER_OBJ
         self.attr_thresh = cfg.MODEL.ROI_ATTRIBUTE_HEAD.POSTPROCESS_ATTRIBUTES_THRESHOLD
         self.output_feature = cfg.TEST.OUTPUT_FEATURE
 
@@ -49,7 +50,7 @@ class AttributePostProcessor(nn.Module):
             for field in box.fields():
                 boxlist.add_field(field, box.get_field(field))
             if self.output_feature:
-                boxlist.add_field('attr_feature') = feature
+                boxlist.add_field('attr_feature', feature)
             # filter out low probability and redundent boxes
             boxlist = self.filter_results(boxlist, prob, feature, num_classes)
             results.append(boxlist)
@@ -78,13 +79,9 @@ class AttributePostProcessor(nn.Module):
             )
             scores[scores<attr_thresh.item()] = 0.0
 
-        attr_labels = []
-        attr_scores = []
-        for score in scores:
-            attr_labels.append(score.nonzero().squeeze(1))
-            attr_scores.append(score[attr_labels[-1]])
-        boxlist.add_field('attr_labels') = attr_labels
-        boxlist.add_field('attr_scores') = attr_scores
+        attr_scores, attr_labels = torch.topk(scores, self.max_num_attr_per_obj, dim=1)
+        boxlist.add_field('attr_labels', attr_labels)
+        boxlist.add_field('attr_scores', attr_scores)
         return boxlist
 
 

@@ -34,6 +34,7 @@ class PostProcessor(nn.Module):
         self.score_thresh = cfg.MODEL.ROI_HEADS.SCORE_THRESH
         self.nms = cfg.MODEL.ROI_HEADS.NMS
         self.detections_per_img = cfg.MODEL.ROI_HEADS.DETECTIONS_PER_IMG
+        self.detections_per_obj = cfg.MODEL.ROI_HEADS.DETECTIONS_PER_OBJ
         if box_coder is None:
             box_coder = BoxCoder(weights=(10., 10., 5., 5.))
         self.box_coder = box_coder
@@ -90,7 +91,7 @@ class PostProcessor(nn.Module):
                 scores, labels = torch.max(prob[:, 1:], dim=1)
                 boxlist.extra_fields['scores'] = scores
                 boxlist.add_field('box_feature', feature)
-                boxlist.add_field('labels') = labels+1
+                boxlist.add_field('labels', labels+1)
             else:
                 boxlist = self.filter_results(boxlist, num_classes, feature)
             results.append(boxlist)
@@ -170,11 +171,6 @@ def make_roi_box_post_processor(cfg):
 
     bbox_reg_weights = cfg.MODEL.ROI_HEADS.BBOX_REG_WEIGHTS
     box_coder = BoxCoder(weights=bbox_reg_weights)
-
-    score_thresh = cfg.MODEL.ROI_HEADS.SCORE_THRESH
-    nms_thresh = cfg.MODEL.ROI_HEADS.NMS
-    detections_per_img = cfg.MODEL.ROI_HEADS.DETECTIONS_PER_IMG
-    cls_agnostic_bbox_reg = cfg.MODEL.CLS_AGNOSTIC_BBOX_REG
 
     postprocessor = PostProcessor(
         cfg,

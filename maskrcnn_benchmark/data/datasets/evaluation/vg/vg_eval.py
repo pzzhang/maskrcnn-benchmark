@@ -163,11 +163,13 @@ def calc_detection_voc_prec_rec(pred_boxlists, gt_boxlists, classindex, iou_thre
 
         # prediction output for each class
         if eval_attributes:
-            pred_mask_l = np.array([classindex in i for i in pred_label])
+            pred_mask_l = (pred_label==classindex).nonzero()
+            pred_bbox_l = pred_bbox[pred_mask_l[:,0]]
+            pred_score_l = pred_score[pred_label==classindex]
         else:
             pred_mask_l = pred_label == classindex
-        pred_bbox_l = pred_bbox[pred_mask_l]
-        pred_score_l = pred_score[pred_mask_l]
+            pred_bbox_l = pred_bbox[pred_mask_l]
+            pred_score_l = pred_score[pred_mask_l]
 
         for bbox_tmp, score_tmp in zip(pred_bbox_l, pred_score_l):
             image_ids.append(image_index)
