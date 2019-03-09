@@ -50,7 +50,7 @@ class GeneralizedRCNN(nn.Module):
         features = self.backbone(images.tensors)
         if (not self.training) and targets and force_boxes:
             # if in the reference model, we want to force boxes given in the target
-            proposals = BoxList(targets.bbox, targets.size, targets.mode)
+            proposals = [BoxList(target.bbox, target.size, target.mode) for target in targets]
             proposal_losses = {}
         else:
             proposals, proposal_losses = self.rpn(images, features, targets)
