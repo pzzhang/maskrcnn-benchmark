@@ -141,14 +141,17 @@ def calc_detection_voc_prec_rec(pred_boxlists, gt_boxlists, classindex, iou_thre
     BB = []
     for image_index, (gt_boxlist, pred_boxlist) in enumerate(zip(gt_boxlists, pred_boxlists)):
         pred_bbox = pred_boxlist.bbox.numpy()
-        pred_label = pred_boxlist.get_field("labels").numpy()
-        pred_score = pred_boxlist.get_field("scores").numpy()
         gt_bbox = gt_boxlist.bbox.numpy()
         if eval_attributes:
             gt_label = gt_boxlist.get_field("attributes").numpy()
+            pred_label = pred_boxlist.get_field("attr_labels").numpy()
+            pred_score = pred_boxlist.get_field("attr_scores").numpy()
         else:
             gt_label = gt_boxlist.get_field("labels").numpy()
+            pred_label = pred_boxlist.get_field("labels").numpy()
+            pred_score = pred_boxlist.get_field("scores").numpy()
 
+        # get the ground truth information for this class
         if eval_attributes:
             gt_mask_l = np.array([classindex in i for i in gt_label])
         else:
