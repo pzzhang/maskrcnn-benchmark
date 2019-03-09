@@ -34,7 +34,6 @@ class PostProcessor(nn.Module):
         self.score_thresh = cfg.MODEL.ROI_HEADS.SCORE_THRESH
         self.nms = cfg.MODEL.ROI_HEADS.NMS
         self.detections_per_img = cfg.MODEL.ROI_HEADS.DETECTIONS_PER_IMG
-        self.detections_per_obj = cfg.MODEL.ROI_HEADS.DETECTIONS_PER_OBJ
         if box_coder is None:
             box_coder = BoxCoder(weights=(10., 10., 5., 5.))
         self.box_coder = box_coder
