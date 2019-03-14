@@ -8,7 +8,7 @@ import torch.distributed as dist
 
 from maskrcnn_benchmark.utils.comm import get_world_size
 from maskrcnn_benchmark.utils.metric_logger import MetricLogger
-
+import pdb
 
 def reduce_loss_dict(loss_dict):
     """
@@ -53,6 +53,7 @@ def do_train(
     model.train()
     start_training_time = time.time()
     end = time.time()
+    num=0
     for iteration, (images, targets, _) in enumerate(data_loader, start_iter):
         data_time = time.time() - end
         iteration = iteration + 1
@@ -102,9 +103,14 @@ def do_train(
                 )
             )
         if iteration % checkpoint_period == 0:
+            print("checkpoint_period: ", checkpoint_period)
+            print("**arguments: ", arguments)
             checkpointer.save("model_{:07d}".format(iteration), **arguments)
         if iteration == max_iter:
             checkpointer.save("model_final", **arguments)
+
+        print(num)
+        num+=1
 
     total_training_time = time.time() - start_training_time
     total_time_str = str(datetime.timedelta(seconds=total_training_time))

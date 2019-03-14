@@ -22,6 +22,7 @@ _C = CN()
 
 _C.MODEL = CN()
 _C.MODEL.RPN_ONLY = False
+_C.MODEL.ATTRIBUTE_ON = False
 _C.MODEL.MASK_ON = False
 _C.MODEL.RETINANET_ON = False
 _C.MODEL.KEYPOINT_ON = False
@@ -40,7 +41,7 @@ _C.MODEL.WEIGHT = ""
 # -----------------------------------------------------------------------------
 _C.INPUT = CN()
 # Size of the smallest side of the image during training
-_C.INPUT.MIN_SIZE_TRAIN = (800,)  # (800,)
+_C.INPUT.MIN_SIZE_TRAIN = 800  # (800,)
 # Maximum size of the side of the image during training
 _C.INPUT.MAX_SIZE_TRAIN = 1333
 # Size of the smallest side of the image during testing
@@ -213,6 +214,27 @@ _C.MODEL.ROI_BOX_HEAD.USE_GN = False
 _C.MODEL.ROI_BOX_HEAD.DILATION = 1
 _C.MODEL.ROI_BOX_HEAD.CONV_HEAD_DIM = 256
 _C.MODEL.ROI_BOX_HEAD.NUM_STACKED_CONVS = 4
+
+
+_C.MODEL.ROI_ATTRIBUTE_HEAD = CN()
+_C.MODEL.ROI_ATTRIBUTE_HEAD.FEATURE_EXTRACTOR = "ResNet50Conv5ROIFeatureExtractor"
+_C.MODEL.ROI_ATTRIBUTE_HEAD.PREDICTOR = "AttributeRCNNPredictor"
+_C.MODEL.ROI_ATTRIBUTE_HEAD.POOLER_RESOLUTION = 14
+_C.MODEL.ROI_ATTRIBUTE_HEAD.POOLER_SAMPLING_RATIO = 0
+_C.MODEL.ROI_ATTRIBUTE_HEAD.POOLER_SCALES = (1.0 / 16,)
+_C.MODEL.ROI_ATTRIBUTE_HEAD.NUM_ATTRIBUTES = 401
+_C.MODEL.ROI_ATTRIBUTE_HEAD.MLP_HEAD_DIM = 1024
+_C.MODEL.ROI_ATTRIBUTE_HEAD.CLS_EMD_DIM = 256
+_C.MODEL.ROI_ATTRIBUTE_HEAD.ATTR_EMD_DIM = 512
+_C.MODEL.ROI_ATTRIBUTE_HEAD.MAX_NUM_ATTR_PER_IMG = 100
+_C.MODEL.ROI_ATTRIBUTE_HEAD.MAX_NUM_ATTR_PER_OBJ = 16
+_C.MODEL.ROI_ATTRIBUTE_HEAD.POSTPROCESS_ATTRIBUTES_THRESHOLD = 0.0
+_C.MODEL.ROI_ATTRIBUTE_HEAD.SHARE_BOX_FEATURE_EXTRACTOR = True
+_C.MODEL.ROI_ATTRIBUTE_HEAD.LOSS_WEIGHT = 0.5
+# Dilation
+# _C.MODEL.ROI_ATTRIBUTE_HEAD.DILATION = 1
+# GN
+# _C.MODEL.ROI_ATTRIBUTE_HEAD.USE_GN = False
 
 
 _C.MODEL.ROI_MASK_HEAD = CN()
@@ -405,6 +427,8 @@ _C.SOLVER.IMS_PER_BATCH = 16
 # Specific test options
 # ---------------------------------------------------------------------------- #
 _C.TEST = CN()
+# __C.TEST.FORCE_BOXES = False
+_C.TEST.OUTPUT_FEATURE = False
 _C.TEST.EXPECTED_RESULTS = []
 _C.TEST.EXPECTED_RESULTS_SIGMA_TOL = 4
 # Number of images per batch
@@ -419,5 +443,6 @@ _C.TEST.DETECTIONS_PER_IMG = 100
 # Misc options
 # ---------------------------------------------------------------------------- #
 _C.OUTPUT_DIR = "."
+_C.DATA_DIR = "./datasets"
 
 _C.PATHS_CATALOG = os.path.join(os.path.dirname(__file__), "paths_catalog.py")

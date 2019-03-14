@@ -103,13 +103,29 @@ class DatasetCatalog(object):
         "cityscapes_fine_instanceonly_seg_test_cocostyle": {
             "img_dir": "cityscapes/images",
             "ann_file": "cityscapes/annotations/instancesonly_filtered_gtFine_test.json"
+        },
+        "vg_train":{
+            "img_dir":"vg/vg",
+            "ann_file":"vg/Annotations"
+        },
+        "vg_val":{
+            "img_dir":"vg/vg",
+            "ann_file":"vg/Annotations"
+        },
+        "vg_minitrain":{
+            "img_dir":"vg/vg",
+            "ann_file":"vg/Annotations"
+        },
+        "vg_minival":{
+            "img_dir":"vg/vg",
+            "ann_file":"vg/Annotations"
         }
     }
 
     @staticmethod
-    def get(name):
+    def get(name, data_dir):
         if "coco" in name:
-            data_dir = DatasetCatalog.DATA_DIR
+            # data_dir = DatasetCatalog.DATA_DIR
             attrs = DatasetCatalog.DATASETS[name]
             args = dict(
                 root=os.path.join(data_dir, attrs["img_dir"]),
@@ -120,7 +136,7 @@ class DatasetCatalog(object):
                 args=args,
             )
         elif "voc" in name:
-            data_dir = DatasetCatalog.DATA_DIR
+            # data_dir = DatasetCatalog.DATA_DIR
             attrs = DatasetCatalog.DATASETS[name]
             args = dict(
                 data_dir=os.path.join(data_dir, attrs["data_dir"]),
@@ -128,6 +144,50 @@ class DatasetCatalog(object):
             )
             return dict(
                 factory="PascalVOCDataset",
+                args=args,
+            )
+        elif "vg_train" in name:
+            # data_dir = DatasetCatalog.DATA_DIR
+            attrs = DatasetCatalog.DATASETS[name]
+            args = dict(
+                data_dir=os.path.join(data_dir, 'vg'),
+                split='train',
+            )
+            return dict(
+                factory="VGDataset",
+                args=args,
+            )
+        elif "vg_val" in name:
+            # data_dir = DatasetCatalog.DATA_DIR
+            attrs = DatasetCatalog.DATASETS[name]
+            args = dict(
+                data_dir=os.path.join(data_dir, 'vg'),
+                split='val',
+            )
+            return dict(
+                factory="VGDataset",
+                args=args,
+            )
+        elif "vg_minitrain" in name:
+            # data_dir = DatasetCatalog.DATA_DIR
+            attrs = DatasetCatalog.DATASETS[name]
+            args = dict(
+                data_dir=os.path.join(data_dir, 'vg'),
+                split='minitrain',
+            )
+            return dict(
+                factory="VGDataset",
+                args=args,
+            )
+        elif "vg_minival" in name:
+            # data_dir = DatasetCatalog.DATA_DIR
+            attrs = DatasetCatalog.DATASETS[name]
+            args = dict(
+                data_dir=os.path.join(data_dir, 'vg'),
+                split='minival',
+            )
+            return dict(
+                factory="VGDataset",
                 args=args,
             )
         raise RuntimeError("Dataset not available: {}".format(name))

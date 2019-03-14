@@ -13,15 +13,16 @@ from ..utils.comm import all_gather
 from ..utils.comm import synchronize
 
 
-def compute_on_dataset(model, data_loader, device):
+def compute_on_dataset(model, data_loader, device, eval_attributes):
     model.eval()
     results_dict = {}
     cpu_device = torch.device("cpu")
     for i, batch in enumerate(tqdm(data_loader)):
         images, targets, image_ids = batch
         images = images.to(device)
+        targets = [target.to(device) for target in targets]
         with torch.no_grad():
-            output = model(images)
+            output = model(images, targets, force_boxes=eval_attributes)
             output = [o.to(cpu_device) for o in output]
         results_dict.update(
             {img_id: result for img_id, result in zip(image_ids, output)}
@@ -61,6 +62,7 @@ def inference(
         expected_results=(),
         expected_results_sigma_tol=4,
         output_folder=None,
+        eval_attributes=False,
 ):
     # convert to a torch.device for efficiency
     device = torch.device(device)
@@ -73,7 +75,7 @@ def inference(
     dataset = data_loader.dataset
     logger.info("Start evaluation on {} dataset({} images).".format(dataset_name, len(dataset)))
     start_time = time.time()
-    predictions = compute_on_dataset(model, data_loader, device)
+    predictions = compute_on_dataset(model, data_loader, device, eval_attributes)
     # wait for all processes to complete before measuring the time
     synchronize()
     total_time = time.time() - start_time
@@ -93,6 +95,7 @@ def inference(
 
     extra_args = dict(
         box_only=box_only,
+        eval_attributes=eval_attributes,
         iou_types=iou_types,
         expected_results=expected_results,
         expected_results_sigma_tol=expected_results_sigma_tol,

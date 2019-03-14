@@ -25,6 +25,8 @@ from maskrcnn_benchmark.utils.imports import import_file
 from maskrcnn_benchmark.utils.logger import setup_logger
 from maskrcnn_benchmark.utils.miscellaneous import mkdir
 
+import pdb
+
 
 def train(cfg, local_rank, distributed):
     model = build_detection_model(cfg)
@@ -92,6 +94,7 @@ def run_test(cfg, model, distributed):
             output_folder = os.path.join(cfg.OUTPUT_DIR, "inference", dataset_name)
             mkdir(output_folder)
             output_folders[idx] = output_folder
+    # evaluate object detection
     data_loaders_val = make_data_loader(cfg, is_train=False, is_distributed=distributed)
     for output_folder, dataset_name, data_loader_val in zip(output_folders, dataset_names, data_loaders_val):
         inference(
@@ -104,6 +107,23 @@ def run_test(cfg, model, distributed):
             expected_results=cfg.TEST.EXPECTED_RESULTS,
             expected_results_sigma_tol=cfg.TEST.EXPECTED_RESULTS_SIGMA_TOL,
             output_folder=output_folder,
+            eval_attributes=False,
+        )
+        synchronize()
+    # evaluate attribute detection
+    data_loaders_val = make_data_loader(cfg, is_train=False, is_distributed=distributed)
+    for output_folder, dataset_name, data_loader_val in zip(output_folders, dataset_names, data_loaders_val):
+        inference(
+            model,
+            data_loader_val,
+            dataset_name=dataset_name,
+            iou_types=iou_types,
+            box_only=False if cfg.MODEL.RETINANET_ON else cfg.MODEL.RPN_ONLY,
+            device=cfg.MODEL.DEVICE,
+            expected_results=cfg.TEST.EXPECTED_RESULTS,
+            expected_results_sigma_tol=cfg.TEST.EXPECTED_RESULTS_SIGMA_TOL,
+            output_folder=output_folder,
+            eval_attributes=True,
         )
         synchronize()
 
@@ -118,6 +138,20 @@ def main():
         type=str,
     )
     parser.add_argument("--local_rank", type=int, default=0)
+    parser.add_argument(
+        "--data-dir",
+        default=".",
+        metavar="DIR",
+        help="data dir for training",
+        type=str,
+    )
+    parser.add_argument(
+        "--out-dir",
+        default=".",
+        metavar="DIR",
+        help="output dir for model",
+        type=str,
+    )
     parser.add_argument(
         "--gpu_ids",
         default="-1",
@@ -153,6 +187,13 @@ def main():
 
     cfg.merge_from_file(args.config_file)
     cfg.merge_from_list(args.opts)
+    cfg.OUTPUT_DIR = args.out_dir + cfg.OUTPUT_DIR[1:]
+    cfg.MODEL.WEIGHT = args.out_dir + cfg.MODEL.WEIGHT[1:]
+    cfg.DATA_DIR = args.data_dir + cfg.DATA_DIR[1:]
+    print("cfg.OUTPUT_DIR: ", cfg.OUTPUT_DIR)
+    print("cfg.MODEL.WEIGHT: ", cfg.MODEL.WEIGHT)
+    print("cfg.DATA_DIR: ", cfg.DATA_DIR)
+    print("cfg.MODEL.ATTRIBUTE_ON: ", cfg.MODEL.ATTRIBUTE_ON)
     cfg.freeze()
 
     output_dir = cfg.OUTPUT_DIR

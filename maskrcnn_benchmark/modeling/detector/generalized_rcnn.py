@@ -7,6 +7,7 @@ import torch
 from torch import nn
 
 from maskrcnn_benchmark.structures.image_list import to_image_list
+from maskrcnn_benchmark.structures.bounding_box import BoxList
 
 from ..backbone import build_backbone
 from ..rpn.rpn import build_rpn
@@ -30,7 +31,7 @@ class GeneralizedRCNN(nn.Module):
         self.rpn = build_rpn(cfg, self.backbone.out_channels)
         self.roi_heads = build_roi_heads(cfg, self.backbone.out_channels)
 
-    def forward(self, images, targets=None):
+    def forward(self, images, targets=None, force_boxes=False):
         """
         Arguments:
             images (list[Tensor] or ImageList): images to be processed
@@ -47,9 +48,15 @@ class GeneralizedRCNN(nn.Module):
             raise ValueError("In training mode, targets should be passed")
         images = to_image_list(images)
         features = self.backbone(images.tensors)
-        proposals, proposal_losses = self.rpn(images, features, targets)
+        if (not self.training) and targets and force_boxes:
+            # if in the reference model, we want to force boxes given in the target
+            proposals = [BoxList(target.bbox, target.size, target.mode) for target in targets]
+            proposal_losses = {}
+        else:
+            proposals, proposal_losses = self.rpn(images, features, targets)
+            
         if self.roi_heads:
-            x, result, detector_losses = self.roi_heads(features, proposals, targets)
+            x, result, detector_losses = self.roi_heads(features, proposals, targets, force_boxes)
         else:
             # RPN-only models don't have roi_heads
             x = features
