@@ -13,6 +13,7 @@ pip install --user opencv-python
 #pip install --user torch torchvision
 #pip install --user easydict
 pip install --user progressbar
+pip install --user tqdm
 # pip install --user ipdb
 #pip install --user scikit-image
 #pip install --user torchtext
