@@ -22,9 +22,11 @@ def do_vg_evaluation(dataset, predictions, output_folder, box_only, eval_attribu
                 stats = evaluate_box_proposals(
                     predictions, dataset, area=area, limit=limit
                 )
-                key = "AR{}@{:d}".format(suffix, limit)
-                res[key] = stats["ar"].item()
-                print(key, "ar={:.4f}".format(res[key]))
+                key_ar = "AR{}@{:d}".format(suffix, limit)
+                key_recalls = "Recalls{}@{:d}".format(suffix, limit)
+                res[key_ar] = stats["ar"].item()
+                res[key_recalls] = stats["recalls"]
+                print(key_ar, "ar={:.4f}".format(res[key_ar]))
         logger.info(res)
         # check_expected_results(res, expected_results, expected_results_sigma_tol)
         if output_folder:
