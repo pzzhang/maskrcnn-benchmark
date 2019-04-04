@@ -5,6 +5,7 @@ from __future__ import division
 import os
 from collections import defaultdict
 import numpy as np
+import torch
 from maskrcnn_benchmark.structures.bounding_box import BoxList
 from maskrcnn_benchmark.structures.boxlist_ops import boxlist_iou
 import pdb
