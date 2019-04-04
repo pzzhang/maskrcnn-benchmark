@@ -24,6 +24,7 @@ def do_vg_evaluation(dataset, predictions, output_folder, box_only, eval_attribu
                 )
                 key = "AR{}@{:d}".format(suffix, limit)
                 res[key] = stats["ar"].item()
+                print(key, "ar={:.4f}".format(res[key]))
         logger.info(res)
         # check_expected_results(res, expected_results, expected_results_sigma_tol)
         if output_folder:
