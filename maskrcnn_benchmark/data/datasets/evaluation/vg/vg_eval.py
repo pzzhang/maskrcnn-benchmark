@@ -407,7 +407,7 @@ def evaluate_box_proposals(
 
         gt_boxes = dataset.get_groundtruth(image_id)
         # filter out the field "relations"
-        gt_boxes = gt_boxes.copy_with_fields(['attributes', 'lables'])
+        gt_boxes = gt_boxes.copy_with_fields(['attributes', 'labels'])
         gt_areas = gt_boxes.area()
 
         if len(gt_boxes) == 0:
