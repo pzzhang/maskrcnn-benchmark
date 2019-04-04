@@ -104,6 +104,8 @@ def inference(
     if output_folder:
         torch.save(predictions, os.path.join(output_folder, "predictions.pth"))
 
+    # now only test box generation
+    box_only = True
     extra_args = dict(
         box_only=box_only,
         eval_attributes=eval_attributes,
