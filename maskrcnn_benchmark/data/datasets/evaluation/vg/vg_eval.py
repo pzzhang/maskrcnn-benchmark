@@ -406,6 +406,8 @@ def evaluate_box_proposals(
         prediction = prediction[inds]
 
         gt_boxes = dataset.get_groundtruth(image_id)
+        # filter out the field "relations"
+        gt_boxes = gt_boxes.copy_with_fields(['attributes', 'lables'])
         gt_areas = gt_boxes.area()
 
         if len(gt_boxes) == 0:
