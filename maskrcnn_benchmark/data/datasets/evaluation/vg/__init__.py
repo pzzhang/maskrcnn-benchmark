@@ -1,7 +1,6 @@
 import logging
 
 from .vg_eval import do_vg_evaluation
-from .vg_rpn_eval import do_vg_rpn_evaluation
 
 
 def vg_evaluation(dataset, predictions, output_folder, box_only, eval_attributes, **_):
