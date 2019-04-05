@@ -552,11 +552,11 @@ def evaluate_box_proposals_for_relation(
         if len(gt_relations) == 0:
             continue
 
-        if len(anchor_relations) == 0:
+        if len(anchor_pairs) == 0:
             continue
 
-        if limit is not None and len(prediction) > limit:
-            anchor_relations = anchor_relations[:limit]
+        if limit is not None and len(anchor_pairs) > limit:
+            anchor_pairs = anchor_pairs[:limit]
 
         overlaps_sub = boxlist_iou(prediction[anchor_pairs[:,0]], gt_boxes[gt_triplets[valid_gt_inds,0]])
         overlaps_obj = boxlist_iou(prediction[anchor_pairs[:,1]], gt_boxes[gt_triplets[valid_gt_inds,2]])
