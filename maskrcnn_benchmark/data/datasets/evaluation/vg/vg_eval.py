@@ -7,7 +7,7 @@ from collections import defaultdict
 import numpy as np
 import torch
 from maskrcnn_benchmark.structures.bounding_box import BoxList
-from maskrcnn_benchmark.structures.boxlist_ops import boxlist_iou
+from maskrcnn_benchmark.structures.boxlist_ops import boxlist_iou, getUnionBBox
 import pdb
 
 def do_vg_evaluation(dataset, predictions, output_folder, box_only, eval_attributes, logger):
@@ -17,8 +17,8 @@ def do_vg_evaluation(dataset, predictions, output_folder, box_only, eval_attribu
         logger.info("Evaluating bbox proposals")
         areas = {"all": "", "small": "s", "medium": "m", "large": "l"}
         res = {}
-        for limit in [100, 1000]:
-            for area, suffix in areas.items():
+        for area, suffix in areas.items():
+            for limit in [100, 1000]:
                 stats = evaluate_box_proposals(
                     predictions, dataset, area=area, limit=limit
                 )
@@ -27,6 +27,14 @@ def do_vg_evaluation(dataset, predictions, output_folder, box_only, eval_attribu
                 res[key_ar] = stats["ar"].item()
                 res[key_recalls] = stats["recalls"]
                 print(key_ar, "ar={:.4f}".format(res[key_ar]))
+            stats = evaluate_box_proposals_for_relation(
+                predictions, dataset, area=area, limit=None
+            )
+            key_ar = "AR{}@all_for_relation".format(suffix)
+            key_recalls = "Recalls{}@all_for_relation".format(suffix)
+            res[key_ar] = stats["ar"].item()
+            res[key_recalls] = stats["recalls"]
+            print(key_ar, "ar={:.4f}".format(res[key_ar]))
         logger.info(res)
         # check_expected_results(res, expected_results, expected_results_sigma_tol)
         if output_folder:
@@ -472,4 +480,125 @@ def evaluate_box_proposals(
         "gt_overlaps": gt_overlaps,
         "num_pos": num_pos,
     }
+
+
+# inspired from Detectron
+def evaluate_box_proposals_for_relation(
+    predictions, dataset, thresholds=None, area="all", limit=None
+):
+    """Evaluate how many relation pairs can be captured by the proposed boxes.
+    """
+    # Record max overlap value for each gt box
+    # Return vector of overlap values
+    areas = {
+        "all": 0,
+        "small": 1,
+        "medium": 2,
+        "large": 3,
+        "96-128": 4,
+        "128-256": 5,
+        "256-512": 6,
+        "512-inf": 7,
+    }
+    area_ranges = [
+        [0 ** 2, 1e5 ** 2],  # all
+        [0 ** 2, 32 ** 2],  # small
+        [32 ** 2, 96 ** 2],  # medium
+        [96 ** 2, 1e5 ** 2],  # large
+        [96 ** 2, 128 ** 2],  # 96-128
+        [128 ** 2, 256 ** 2],  # 128-256
+        [256 ** 2, 512 ** 2],  # 256-512
+        [512 ** 2, 1e5 ** 2],
+    ]  # 512-inf
+    assert area in areas, "Unknown area range: {}".format(area)
+    area_range = area_ranges[areas[area]]
+    gt_overlaps = []
+    num_pos = 0
+
+    for image_id, prediction in enumerate(predictions):
+        img_info = dataset.get_img_info(image_id)
+        image_width = img_info["width"]
+        image_height = img_info["height"]
+        prediction = prediction.resize((image_width, image_height))
+        # get the predicted relation pairs
+        N = len(prediction)
+        map_x = np.arange(N)
+        map_y = np.arange(N)
+        map_x_g, map_y_g = np.meshgrid(map_x, map_y)
+        anchor_pairs = torch.from_numpy(np.vstack((map_y_g.ravel(), map_x_g.ravel())).transpose())
+        # remove diagonal pairs
+        keep = anchor_pairs[:,0]!=anchor_pairs[:,1]
+        anchor_pairs = anchor_pairs[keep]
+        # get anchor_relations
+        # anchor_relations = getUnionBBox(prediction[anchor_pairs[:,0]], prediction[anchor_pairs[:,1]], margin=0)
+
+        gt_boxes = dataset.get_groundtruth(image_id)
+        # filter out the field "relations"
+        gt_triplets = gt_boxes.get_field("relations")
+        if len(gt_triplets) == 0:
+            continue
+        gt_boxes = gt_boxes.copy_with_fields(['attributes', 'labels'])
+        # get union bounding boxes (the box that cover both)
+        gt_relations = getUnionBBox(gt_boxes[gt_triplets[:,0]], gt_boxes[gt_triplets[:,2]], margin=0)
+        gt_relations.add_field('rel_classes', gt_triplets[:,1])
+        # focus on the range interested
+        gt_relation_areas = gt_relations.area()
+        valid_gt_inds = (gt_relation_areas >= area_range[0]) & (gt_relation_areas <= area_range[1])
+        gt_relations = gt_relations[valid_gt_inds]
+
+        num_pos += len(gt_relations)
+
+        if len(gt_relations) == 0:
+            continue
+
+        if len(anchor_relations) == 0:
+            continue
+
+        if limit is not None and len(prediction) > limit:
+            anchor_relations = anchor_relations[:limit]
+
+        overlaps_sub = boxlist_iou(prediction[anchor_pairs[:,0]], gt_boxes[gt_triplets[valid_gt_inds,0]])
+        overlaps_obj = boxlist_iou(prediction[anchor_pairs[:,1]], gt_boxes[gt_triplets[valid_gt_inds,2]])
+        overlaps = torch.min(overlaps_sub, overlaps_obj)
+
+        _gt_overlaps = torch.zeros(len(gt_relations))
+        for j in range(min(len(anchor_pairs), len(gt_relations))):
+            # find which proposal box maximally covers each gt box
+            # and get the iou amount of coverage for each gt box
+            max_overlaps, argmax_overlaps = overlaps.max(dim=0)
+
+            # find which gt box is 'best' covered (i.e. 'best' = most iou)
+            gt_ovr, gt_ind = max_overlaps.max(dim=0)
+            assert gt_ovr >= 0
+            # find the proposal pair that covers the best covered gt pair
+            pair_ind = argmax_overlaps[gt_ind]
+            # record the co-iou coverage of this gt pair
+            _gt_overlaps[j] = overlaps[pair_ind, gt_ind]
+            assert _gt_overlaps[j] == gt_ovr
+            # mark the proposal pair and the gt pair as used
+            overlaps[pair_ind, :] = -1
+            overlaps[:, gt_ind] = -1
+
+        # append recorded iou coverage level
+        gt_overlaps.append(_gt_overlaps)
+    gt_overlaps = torch.cat(gt_overlaps, dim=0)
+    gt_overlaps, _ = torch.sort(gt_overlaps)
+
+    if thresholds is None:
+        step = 0.05
+        thresholds = torch.arange(0.5, 0.95 + 1e-5, step, dtype=torch.float32)
+    recalls = torch.zeros_like(thresholds)
+    # compute recall for each iou threshold
+    for i, t in enumerate(thresholds):
+        recalls[i] = (gt_overlaps >= t).float().sum() / float(num_pos)
+    # ar = 2 * np.trapz(recalls, thresholds)
+    ar = recalls.mean()
+    return {
+        "ar": ar,
+        "recalls": recalls,
+        "thresholds": thresholds,
+        "gt_overlaps": gt_overlaps,
+        "num_pos": num_pos,
+    }
+
 
