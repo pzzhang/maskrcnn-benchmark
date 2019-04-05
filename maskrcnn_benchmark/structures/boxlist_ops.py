@@ -134,4 +134,4 @@ def getUnionBBox(aBB, bBB, margin = 10):
     union_boxes = torch.cat([(torch.min(aBB.bbox[:,[0,1]], bBB.bbox[:,[0,1]]) - margin).clamp(min=0), \
         (torch.max(aBB.bbox[:,[2]], bBB.bbox[:,[2]]) + margin).clamp(max=iw), \
         (torch.max(aBB.bbox[:,[3]], bBB.bbox[:,[3]]) + margin).clamp(max=ih)], dim=1)
-    return BoxList(union_boxes, size=aBB.size, mode=aBB.mode)
+    return BoxList(union_boxes, aBB.size, mode=aBB.mode)

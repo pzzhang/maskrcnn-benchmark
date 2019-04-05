@@ -15,5 +15,4 @@ eval_attributes=False
 box_only=True
 predictions=torch.load("/var/maskrcnn-benchmark/models/detection_with_attribute_bs8/inference/vg_val/predictions.pth")
 
-logger = logging.getLogger("maskrcnn_benchmark.inference")
-evaluate(dataset=dataset, predictions=predictions, output_folder=output_folder, box_only=box_only, eval_attributes=eval_attributes, iou_types=iou_types, logger=logger)
+evaluate(dataset=dataset, predictions=predictions, output_folder=output_folder, box_only=box_only, eval_attributes=eval_attributes, iou_types=iou_types)
