@@ -14,11 +14,11 @@ def do_vg_evaluation(dataset, predictions, output_folder, box_only, eval_attribu
     # TODO need to make the use_07_metric format available
     # for the user to choose
     if box_only:
-        logger.info("Evaluating bbox proposals")
         areas = {"all": "", "small": "s", "medium": "m", "large": "l"}
         res = {}
         for area, suffix in areas.items():
             for limit in [100, 1000]:
+                logger.info("Evaluating bbox proposals@{:d}".format(limit))
                 stats = evaluate_box_proposals(
                     predictions, dataset, area=area, limit=limit
                 )
@@ -27,6 +27,7 @@ def do_vg_evaluation(dataset, predictions, output_folder, box_only, eval_attribu
                 res[key_ar] = stats["ar"].item()
                 res[key_recalls] = stats["recalls"]
                 print(key_ar, "ar={:.4f}".format(res[key_ar]))
+            logger.info("Evaluating relation proposals")
             stats = evaluate_box_proposals_for_relation(
                 predictions, dataset, area=area, limit=None
             )
