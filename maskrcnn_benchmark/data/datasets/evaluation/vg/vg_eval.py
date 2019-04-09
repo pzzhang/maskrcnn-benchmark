@@ -415,7 +415,12 @@ def evaluate_box_proposals(
 
         # sort predictions in descending order
         # TODO maybe remove this and make it explicit in the documentation
-        inds = prediction.get_field("scores").sort(descending=True)[1]
+        if "objectness" in prediction.extra_fields():
+            inds = prediction.get_field("objectness").sort(descending=True)[1]
+        elif "scores" in prediction.extra_fields():
+            inds = prediction.get_field("scores").sort(descending=True)[1]
+        else:
+            raise ValueError("Neither objectness nor scores is in the extra_fields!")
         prediction = prediction[inds]
 
         gt_boxes = dataset.get_groundtruth(image_id)
