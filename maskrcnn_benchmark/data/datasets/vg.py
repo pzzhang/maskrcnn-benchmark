@@ -137,7 +137,7 @@ class VGDataset(torch.utils.data.Dataset):
         with open(cache_file,'w') as fout:
             for index in range(len(self.ids)):
                 img_id = self.ids[index]
-                with open(self.image_path_from_index(index)) as f:
+                with open(self.image_path_from_index(index), 'rb') as f:
                     image_data=f.read()
                     image_data=base64.b64encode(image_data)
                     base64_data=base64.b64decode(image_data)
