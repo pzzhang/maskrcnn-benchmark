@@ -187,9 +187,9 @@ def main():
 
     cfg.merge_from_file(args.config_file)
     cfg.merge_from_list(args.opts)
-    cfg.OUTPUT_DIR = args.out_dir + cfg.OUTPUT_DIR[1:]
-    cfg.MODEL.WEIGHT = args.out_dir + cfg.MODEL.WEIGHT[1:]
+    cfg.MODEL.WEIGHT = args.data_dir + cfg.MODEL.WEIGHT[1:]
     cfg.DATA_DIR = args.data_dir + cfg.DATA_DIR[1:]
+    cfg.OUTPUT_DIR = args.out_dir + cfg.OUTPUT_DIR[1:]
     print("cfg.OUTPUT_DIR: ", cfg.OUTPUT_DIR)
     print("cfg.MODEL.WEIGHT: ", cfg.MODEL.WEIGHT)
     print("cfg.DATA_DIR: ", cfg.DATA_DIR)
