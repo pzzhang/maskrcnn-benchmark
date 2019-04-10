@@ -8,7 +8,7 @@ import re
 if sys.version_info[0] == 2:
     from cStringIO import StringIO
 else:
-    from io import StringIO
+    from io import BytesIO as StringIO
 import numpy as np
 import json
 from maskrcnn_benchmark.structures.tsv_io import TSVFile, generate_lineidx
