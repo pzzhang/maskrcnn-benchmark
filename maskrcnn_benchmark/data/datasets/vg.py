@@ -140,7 +140,7 @@ class VGDataset(torch.utils.data.Dataset):
                 with open(self.image_path_from_index(index), 'rb') as f:
                     image_data=f.read()
                     image_data=base64.b64encode(image_data)
-                    base64_data=base64.b64decode(image_data)
+                    base64_data=base64.b64decode(image_data+'===')
                     base64_data=StringIO(base64_data)
                     img=Image.open(base64_data)
                 anno=ET.parse(self._annopath % img_id).getroot()
@@ -155,7 +155,7 @@ class VGDataset(torch.utils.data.Dataset):
         row=self.tsvfile.seek(index)
         anno=json.loads(row[1])
         image_data=row[2]
-        base64_data = base64.b64decode(image_data)
+        base64_data = base64.b64decode(image_data+'===')
         base64_data = StringIO(base64_data)
         img = Image.open(base64_data).convert("RGB")
 
