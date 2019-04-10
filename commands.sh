@@ -6,3 +6,6 @@ python -m torch.distributed.launch --nproc_per_node=2 tools/train_net.py --gpu_i
 
 # single gpu testing
 python tools/test_net.py --gpu_ids 2 --config-file "configs/vg_attribute.yaml" TEST.IMS_PER_BATCH 8
+
+
+python wrapper.py --data-dir '/var/maskrcnn-benchmark'
