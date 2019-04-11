@@ -9,3 +9,5 @@ python tools/test_net.py --gpu_ids 2 --config-file "configs/vg_attribute.yaml" T
 
 
 python wrapper.py --data-dir '/var/maskrcnn-benchmark'
+
+python wrapper.py --data-dir ./ --out-dir ./ --config-file "configs/vg_attribute.yaml" --extra-args 'SOLVER.IMS_PER_BATCH 8 SOLVER.BASE_LR 0.0025 SOLVER.MAX_ITER 1520000 SOLVER.STEPS "(480000, 640000)" TEST.IMS_PER_BATCH 8'
