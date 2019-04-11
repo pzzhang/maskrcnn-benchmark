@@ -41,3 +41,4 @@ os.system('python -m torch.distributed.launch --nproc_per_node=4 tools/train_net
 	--data-dir {0} --out-dir {1} --gpu_ids 0,1,2,3 --config-file {2} \
 	--skip-test '.format(data_dir, out_dir, config_file) + opts)
 
+# os.system('python tools/train_net.py --data-dir {0} --out-dir {1} --gpu_ids 0 --config-file {2} --skip-test '.format(data_dir, out_dir, config_file) + opts)
