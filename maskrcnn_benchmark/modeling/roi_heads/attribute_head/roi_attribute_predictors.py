@@ -61,11 +61,11 @@ class AttributeFPNPredictor(nn.Module):
     def forward(self, x, labels):
         if x.ndimension() == 4:
             assert list(x.shape[2:]) == [1, 1]
-            pool5_flat = x.view(x.size(0), -1)
+            x = x.view(x.size(0), -1)
 
         cls_embedding=self.cls_embedding(labels)
-        concat_pool5=torch.cat([pool5_flat,cls_embedding],1)
-        fc_attr=F.relu(self.fc_attr(concat_pool5))
+        concat_x=torch.cat([x,cls_embedding],1)
+        fc_attr=F.relu(self.fc_attr(concat_x))
 
         return self.attr_score(fc_attr), fc_attr
 
