@@ -23,20 +23,14 @@ parser.add_argument(
     help="path to config file",
     type=str,
 )
-parser.add_argument(
-    "opts",
-    help="Modify config options using the command-line",
-    default=None,
-    nargs=argparse.REMAINDER,
-)
 args = parser.parse_args()
 config_file = args.config_file
 data_dir = args.data_dir
 out_dir = args.out_dir
-opts = args.opts
 
 os.system('python setup.py clean --all')
 os.system('python setup.py build develop')
 os.system('python -m torch.distributed.launch --nproc_per_node=4 tools/train_net.py \
 	--data-dir {0} --out-dir {1} --gpu_ids 0,1,2,3 --config-file {2} \
-	--skip-test {3}'.format(data_dir, out_dir, config_file, opts))
+	--skip-test SOLVER.IMS_PER_BATCH 8 SOLVER.BASE_LR 0.0025 SOLVER.MAX_ITER 1520000 \
+    SOLVER.STEPS "(480000, 640000)" TEST.IMS_PER_BATCH 8'.format(data_dir, out_dir, config_file))

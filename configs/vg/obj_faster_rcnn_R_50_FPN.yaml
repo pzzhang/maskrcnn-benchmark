@@ -42,5 +42,5 @@ SOLVER:
   WARMUP_ITERS: 0
 DATALOADER:
   NUM_WORKERS: 4
-OUTPUT_DIR: "./models/obj_faster_rcnn_R_101_FPN_bs8"
+OUTPUT_DIR: "./models/obj_faster_rcnn_R_50_FPN_bs8"
 DATA_DIR: "./datasets"
