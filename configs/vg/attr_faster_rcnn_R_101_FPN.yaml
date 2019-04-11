@@ -45,5 +45,5 @@ SOLVER:
   MAX_ITER: 1520000
   IMS_PER_BATCH: 8
   WARMUP_ITERS: 0
-OUTPUT_DIR: "./models/obj_faster_rcnn_R_101_FPN_bs8"
+OUTPUT_DIR: "./models/attr_faster_rcnn_R_101_FPN_bs8"
 DATA_DIR: "./datasets"
