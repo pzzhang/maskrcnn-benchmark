@@ -29,5 +29,6 @@ SOLVER:
   WARMUP_ITERS: 0
 DATALOADER:
   NUM_WORKERS: 4
+  SIZE_DIVISIBILITY: 32
 OUTPUT_DIR: "./models/rpn_faster_rcnn_R_50_RPN_bs8"
 DATA_DIR: "./datasets"
