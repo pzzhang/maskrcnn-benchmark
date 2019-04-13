@@ -25,6 +25,9 @@ from maskrcnn_benchmark.utils.imports import import_file
 from maskrcnn_benchmark.utils.logger import setup_logger
 from maskrcnn_benchmark.utils.miscellaneous import mkdir
 
+from maskrcnn_benchmark.utils.metric_logger import MetricLogger, \
+    TensorboardLogger
+
 import pdb
 
 
@@ -64,6 +67,15 @@ def train(cfg, local_rank, distributed):
 
     checkpoint_period = cfg.SOLVER.CHECKPOINT_PERIOD
 
+    if cfg.USE_TENSORBOARD_LOGS:
+        meters = TensorboardLogger(
+            log_dir=os.path.join(output_dir, 'tensorboard_logs'),
+            start_iter=arguments['iteration'],
+            delimiter="  ",
+        )
+    else:
+        meters = MetricLogger(delimiter="  ")
+
     do_train(
         model,
         data_loader,
@@ -73,6 +85,7 @@ def train(cfg, local_rank, distributed):
         device,
         checkpoint_period,
         arguments,
+        meters,
     )
 
     return model
