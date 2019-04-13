@@ -47,7 +47,10 @@ class Checkpointer(object):
         save_file = os.path.join(self.save_dir, "{}.pth".format(name))
         self.logger.info("Saving checkpoint to {}".format(save_file))
         torch.save(data, save_file)
-        self.tag_last_checkpoint(save_file)
+        # self.tag_last_checkpoint(save_file)
+        # use relative path name to save the checkpoint
+        self.tag_last_checkpoint("{}.pth".format(name))
+
 
     def load(self, f=None):
         if self.has_checkpoint():
@@ -57,6 +60,8 @@ class Checkpointer(object):
             # no checkpoint could be found
             self.logger.info("No checkpoint found. Initializing model from scratch")
             return {}
+        # get the absolute path
+        f = os.path.join(self.save_dir, f)
         self.logger.info("Loading checkpoint from {}".format(f))
         checkpoint = self._load_file(f)
         self._load_model(checkpoint)

@@ -1,8 +1,8 @@
 MODEL:
   META_ARCHITECTURE: "GeneralizedRCNN"
-  WEIGHT: "./pretrained_model/R-101.pkl"
+  WEIGHT: "./pretrained_model/fpn-50-from-xi.pth"
   BACKBONE:
-    CONV_BODY: "R-101-FPN"
+    CONV_BODY: "R-50-FPN"
   ATTRIBUTE_ON: False
   RESNETS:
     BACKBONE_OUT_CHANNELS: 256
@@ -41,6 +41,6 @@ SOLVER:
   MAX_ITER: 1520000
   IMS_PER_BATCH: 8
   WARMUP_ITERS: 0
-OUTPUT_DIR: "./models/obj_faster_rcnn_R_101_FPN_bs8"
+OUTPUT_DIR: "./models/obj_faster_rcnn_R_50_FPN_bs8_oi"
 DATA_DIR: "./datasets"
 USE_TENSORBOARD_LOGS: True

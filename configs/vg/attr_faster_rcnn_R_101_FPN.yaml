@@ -47,3 +47,4 @@ SOLVER:
   WARMUP_ITERS: 0
 OUTPUT_DIR: "./models/attr_faster_rcnn_R_101_FPN_bs8"
 DATA_DIR: "./datasets"
+USE_TENSORBOARD_LOGS: True
