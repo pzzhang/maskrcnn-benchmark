@@ -54,7 +54,7 @@ def do_train(
     model.train()
     start_training_time = time.time()
     end = time.time()
-    num=0
+    # num=0
     for iteration, (images, targets, _) in enumerate(data_loader, start_iter):
         data_time = time.time() - end
         iteration = iteration + 1
@@ -110,8 +110,8 @@ def do_train(
         if iteration == max_iter:
             checkpointer.save("model_final", **arguments)
 
-        print(num)
-        num+=1
+        # print(num)
+        # num+=1
 
     total_training_time = time.time() - start_training_time
     total_time_str = str(datetime.timedelta(seconds=total_training_time))

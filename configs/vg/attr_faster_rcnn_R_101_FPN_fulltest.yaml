@@ -33,8 +33,8 @@ INPUT:
   MIN_SIZE_TEST: 600
   MAX_SIZE_TEST: 1000
 DATASETS:
-  TRAIN: ("vg_minitrain",)
-  TEST: ("vg_minival",)
+  TRAIN: ("vg_train",)
+  TEST: ("vg_val",)
 DATALOADER:
   SIZE_DIVISIBILITY: 32
   NUM_WORKERS: 4
@@ -45,6 +45,7 @@ SOLVER:
   MAX_ITER: 1520000
   IMS_PER_BATCH: 8
   WARMUP_ITERS: 0
-OUTPUT_DIR: "./models/attr_faster_rcnn_R_101_FPN_bs8_test"
+  CHECKPOINT_PERIOD: 500
+OUTPUT_DIR: "./models/attr_faster_rcnn_R_101_FPN_bs8_fulltest"
 DATA_DIR: "./datasets"
 USE_TENSORBOARD_LOGS: True
