@@ -10,37 +10,51 @@ from maskrcnn_benchmark.structures.bounding_box import BoxList
 from maskrcnn_benchmark.structures.boxlist_ops import boxlist_iou, getUnionBBox
 import pdb
 
-def do_vg_evaluation(dataset, predictions, output_folder, box_only, eval_attributes, logger):
+def do_vg_evaluation(dataset, predictions, output_folder, box_only, eval_attributes, logger, save_predictions=False):
     # TODO need to make the use_07_metric format available
     # for the user to choose
+    # we use int for box_only. 0: False, 1: box for RPN, 2: box for object detection, 
     if box_only:
+        if box_only==1:
+            limits = [100, 1000]
+        elif box_only==2:
+            limits = [36, 100]
+        else:
+            raise ValueError("box_only can be either 0/1/2, but get {0}".format(box_only))
         areas = {"all": "", "small": "s", "medium": "m", "large": "l"}
-        res = {}
+        result = {}
         for area, suffix in areas.items():
-            for limit in [100, 1000]:
+            for limit in limits:
                 logger.info("Evaluating bbox proposals@{:d}".format(limit))
                 stats = evaluate_box_proposals(
                     predictions, dataset, area=area, limit=limit
                 )
                 key_ar = "AR{}@{:d}".format(suffix, limit)
-                key_recalls = "Recalls{}@{:d}".format(suffix, limit)
-                res[key_ar] = stats["ar"].item()
-                res[key_recalls] = stats["recalls"]
-                print(key_ar, "ar={:.4f}".format(res[key_ar]))
-            logger.info("Evaluating relation proposals")
-            stats = evaluate_box_proposals_for_relation(
-                predictions, dataset, area=area, limit=None
-            )
-            key_ar = "AR{}@all_for_relation".format(suffix)
-            key_recalls = "Recalls{}@all_for_relation".format(suffix)
-            res[key_ar] = stats["ar"].item()
-            res[key_recalls] = stats["recalls"]
-            print(key_ar, "ar={:.4f}".format(res[key_ar]))
-        logger.info(res)
-        # check_expected_results(res, expected_results, expected_results_sigma_tol)
-        if output_folder:
-            torch.save(res, os.path.join(output_folder, "box_proposals.pth"))
-        return
+                result[key_ar] = stats["ar"].item()
+                key_num_pos = "num_pos{}@{:d}".format(suffix, limit)
+                result[key_num_pos] = stats["num_pos"]
+                # key_recalls = "Recalls{}@{:d}".format(suffix, limit)
+                # result[key_recalls] = stats["recalls"]
+                print(key_ar, "ar={:.4f}".format(result[key_ar]))
+                print(key_num_pos, "num_pos={:d}".format(result[key_num_pos]))
+                # relation pair evaluation
+                logger.info("Evaluating relation proposals@{:d}".format(limit))
+                stats = evaluate_box_proposals_for_relation(
+                    predictions, dataset, area=area, limit=limit
+                )
+                key_ar = "AR{}@{:d}_for_relation".format(suffix, limit)
+                result[key_ar] = stats["ar"].item()
+                key_num_pos = "num_pos{}@{:d}_for_relation".format(suffix, limit)
+                result[key_num_pos] = stats["num_pos"]
+                # key_recalls = "Recalls{}@{:d}_for_relation".format(suffix, limit)
+                # result[key_recalls] = stats["recalls"]
+                print(key_ar, "ar={:.4f}".format(result[key_ar]))
+                print(key_num_pos, "num_pos={:d}".format(result[key_num_pos]))
+        logger.info(result)
+        # check_expected_results(result, expected_results, expected_results_sigma_tol)
+        if output_folder and save_predictions:
+            torch.save(result, os.path.join(output_folder, "box_proposals.pth"))
+        return result
 
     pred_boxlists = []
     gt_boxlists = []
@@ -80,10 +94,14 @@ def do_vg_evaluation(dataset, predictions, output_folder, box_only, eval_attribu
                 dataset.map_class_id_to_class_name(i), ap
             )
     logger.info(result_str)
-    if output_folder:
+    if output_folder and save_predictions:
         with open(os.path.join(output_folder, "result.txt"), "w") as fid:
             fid.write(result_str)
-    return result
+    # return mAP and weighted mAP
+    if eval_attributes:
+        return {"attr map": result["map"], "attr weighted map": result["weighted map"]}
+    else:
+        return {"map": result["map"], "weighted map": result["weighted map"]}
 
 
 def eval_detection_voc(pred_boxlists, gt_boxlists, classes, iou_thresh=0.5, eval_attributes=False, use_07_metric=False):
@@ -415,13 +433,18 @@ def evaluate_box_proposals(
 
         # sort predictions in descending order
         # TODO maybe remove this and make it explicit in the documentation
-        if "objectness" in prediction.extra_fields():
+        if len(prediction) == 0:
+            continue
+        if "objectness" in prediction.extra_fields:
             inds = prediction.get_field("objectness").sort(descending=True)[1]
-        elif "scores" in prediction.extra_fields():
+        elif "scores" in prediction.extra_fields:
             inds = prediction.get_field("scores").sort(descending=True)[1]
         else:
             raise ValueError("Neither objectness nor scores is in the extra_fields!")
         prediction = prediction[inds]
+
+        if limit is not None and len(prediction) > limit:
+            prediction = prediction[:limit]
 
         gt_boxes = dataset.get_groundtruth(image_id)
         # filter out the field "relations"
@@ -438,12 +461,6 @@ def evaluate_box_proposals(
 
         if len(gt_boxes) == 0:
             continue
-
-        if len(prediction) == 0:
-            continue
-
-        if limit is not None and len(prediction) > limit:
-            prediction = prediction[:limit]
 
         overlaps = boxlist_iou(prediction, gt_boxes)
 
@@ -526,6 +543,19 @@ def evaluate_box_proposals_for_relation(
         image_width = img_info["width"]
         image_height = img_info["height"]
         prediction = prediction.resize((image_width, image_height))
+        # sort predictions in descending order and limit to the number we specify
+        # TODO maybe remove this and make it explicit in the documentation
+        if len(prediction) == 0:
+            continue
+        if "objectness" in prediction.extra_fields:
+            inds = prediction.get_field("objectness").sort(descending=True)[1]
+        elif "scores" in prediction.extra_fields:
+            inds = prediction.get_field("scores").sort(descending=True)[1]
+        else:
+            raise ValueError("Neither objectness nor scores is in the extra_fields!")
+        prediction = prediction[inds]
+        if limit is not None and len(prediction) > limit:
+            prediction = prediction[:limit]
         # get the predicted relation pairs
         N = len(prediction)
         map_x = np.arange(N)
@@ -559,9 +589,6 @@ def evaluate_box_proposals_for_relation(
 
         if len(anchor_pairs) == 0:
             continue
-
-        if limit is not None and len(anchor_pairs) > limit:
-            anchor_pairs = anchor_pairs[:limit]
 
         overlaps_sub = boxlist_iou(prediction[anchor_pairs[:,0]], gt_boxes[gt_triplets[valid_gt_inds,0]])
         overlaps_obj = boxlist_iou(prediction[anchor_pairs[:,1]], gt_boxes[gt_triplets[valid_gt_inds,2]])

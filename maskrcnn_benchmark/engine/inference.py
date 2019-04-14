@@ -105,17 +105,36 @@ def inference(
     if output_folder and save_predictions:
         torch.save(predictions, os.path.join(output_folder, "predictions.pth"))
 
-    # # now only test box generation
-    # box_only = True
     extra_args = dict(
         box_only=box_only,
         eval_attributes=eval_attributes,
         iou_types=iou_types,
         expected_results=expected_results,
         expected_results_sigma_tol=expected_results_sigma_tol,
+        save_predictions=save_predictions,
     )
 
-    return evaluate(dataset=dataset,
+    result = evaluate(dataset=dataset,
                     predictions=predictions,
                     output_folder=output_folder,
                     **extra_args)
+
+    if not (eval_attributes or box_only):
+        # now only test box generation
+        box_only = 2
+        extra_args = dict(
+            box_only=box_only,
+            eval_attributes=eval_attributes,
+            iou_types=iou_types,
+            expected_results=expected_results,
+            expected_results_sigma_tol=expected_results_sigma_tol,
+            save_predictions=save_predictions,
+        )
+
+        result_box = evaluate(dataset=dataset,
+                        predictions=predictions,
+                        output_folder=output_folder,
+                        **extra_args)
+        result = {**result, **result_box}
+
+    return result

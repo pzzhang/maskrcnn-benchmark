@@ -87,8 +87,8 @@ def build_roi_heads(cfg, in_channels):
 
     if not cfg.MODEL.RPN_ONLY:
         roi_heads.append(("box", build_roi_box_head(cfg, in_channels)))
-    if cfg.MODEL.ATTRIBUTE_ON:
-        roi_heads.append(("attribute", build_roi_attribute_head(cfg, in_channels)))
+        if cfg.MODEL.ATTRIBUTE_ON:
+            roi_heads.append(("attribute", build_roi_attribute_head(cfg, in_channels)))
     if cfg.MODEL.MASK_ON:
         roi_heads.append(("mask", build_roi_mask_head(cfg, in_channels)))
     if cfg.MODEL.KEYPOINT_ON:

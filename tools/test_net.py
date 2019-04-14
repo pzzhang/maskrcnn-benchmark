@@ -5,6 +5,7 @@ from maskrcnn_benchmark.utils.env import setup_environment  # noqa F401 isort:sk
 
 import argparse
 import os
+import pdb
 
 import torch
 from maskrcnn_benchmark.config import cfg
@@ -109,7 +110,7 @@ def main():
     # evaluate object detection
     data_loaders_val = make_data_loader(cfg, is_train=False, is_distributed=distributed)
     for output_folder, dataset_name, data_loader_val in zip(output_folders, dataset_names, data_loaders_val):
-        inference(
+        result_obj = inference(
             model,
             data_loader_val,
             dataset_name=dataset_name,
@@ -122,25 +123,11 @@ def main():
             eval_attributes=False,
         )
         synchronize()
-        # # evaluate attribute detection
-        # inference(
-        #     model,
-        #     data_loader_val,
-        #     dataset_name=dataset_name,
-        #     iou_types=iou_types,
-        #     box_only=False if cfg.MODEL.RETINANET_ON else cfg.MODEL.RPN_ONLY,
-        #     device=cfg.MODEL.DEVICE,
-        #     expected_results=cfg.TEST.EXPECTED_RESULTS,
-        #     expected_results_sigma_tol=cfg.TEST.EXPECTED_RESULTS_SIGMA_TOL,
-        #     output_folder=output_folder,
-        #     eval_attributes=True,
-        # )
-        # synchronize()
 
     # evaluate attribute detection
     data_loaders_val = make_data_loader(cfg, is_train=False, is_distributed=distributed)
     for output_folder, dataset_name, data_loader_val in zip(output_folders, dataset_names, data_loaders_val):
-        inference(
+        result_attr = inference(
             model,
             data_loader_val,
             dataset_name=dataset_name,
@@ -153,6 +140,37 @@ def main():
             eval_attributes=True,
         )
         synchronize()
+
+    # evaluate RPN
+    cfg.defrost()
+    cfg.MODEL.RPN_ONLY = True
+    cfg.freeze()
+    logger.info(cfg)
+    # pdb.set_trace()
+    model = build_detection_model(cfg)
+    model.to(cfg.MODEL.DEVICE)
+    output_dir = cfg.OUTPUT_DIR
+    checkpointer = DetectronCheckpointer(cfg, model, save_dir=output_dir)
+    _ = checkpointer.load(cfg.MODEL.WEIGHT)
+
+    data_loaders_val = make_data_loader(cfg, is_train=False, is_distributed=distributed)
+    for output_folder, dataset_name, data_loader_val in zip(output_folders, dataset_names, data_loaders_val):
+        result_rpn = inference(
+            model,
+            data_loader_val,
+            dataset_name=dataset_name,
+            iou_types=iou_types,
+            box_only=False if cfg.MODEL.RETINANET_ON else cfg.MODEL.RPN_ONLY,
+            device=cfg.MODEL.DEVICE,
+            expected_results=cfg.TEST.EXPECTED_RESULTS,
+            expected_results_sigma_tol=cfg.TEST.EXPECTED_RESULTS_SIGMA_TOL,
+            output_folder=output_folder,
+            eval_attributes=False,
+        )
+        synchronize()
+
+    results = {**result_rpn, **result_obj, **result_attr}
+    print(results)
 
 
 if __name__ == "__main__":
