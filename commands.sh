@@ -11,3 +11,6 @@ python tools/test_net.py --gpu_ids 2 --config-file "configs/vg_attribute.yaml" T
 python wrapper.py --data-dir '/var/maskrcnn-benchmark'
 
 python wrapper.py --data-dir ./ --out-dir ./ --config-file "configs/vg/rpn_faster_rcnn_R_101_FPN.yaml" --extra-args 'SOLVER.IMS_PER_BATCH 2 SOLVER.BASE_LR 0.0025 SOLVER.MAX_ITER 1520000 SOLVER.STEPS "(480000, 640000)" TEST.IMS_PER_BATCH 8'
+
+
+python tools/test_net.py --gpu_ids 2 --config-file "configs/vg/attr_faster_rcnn_R_101_FPN_minitest.yaml" TEST.IMS_PER_BATCH 8

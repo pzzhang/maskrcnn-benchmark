@@ -68,6 +68,7 @@ def inference(
         expected_results_sigma_tol=4,
         output_folder=None,
         eval_attributes=False,
+        save_predictions=False,
 ):
     # convert to a torch.device for efficiency
     device = torch.device(device)
@@ -101,7 +102,7 @@ def inference(
     if not is_main_process():
         return
 
-    if output_folder:
+    if output_folder and save_predictions:
         torch.save(predictions, os.path.join(output_folder, "predictions.pth"))
 
     # # now only test box generation
