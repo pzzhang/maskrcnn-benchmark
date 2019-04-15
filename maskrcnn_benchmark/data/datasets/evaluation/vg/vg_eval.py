@@ -38,6 +38,7 @@ def do_vg_evaluation(dataset, predictions, output_folder, box_only, eval_attribu
                 print(key_ar, "ar={:.4f}".format(result[key_ar]))
                 print(key_num_pos, "num_pos={:d}".format(result[key_num_pos]))
                 if not (limit==1000):
+                # if True:
                     # relation @ 1000 (all and large) takes about 2 hs to compute
                     # relation pair evaluation
                     logger.info("Evaluating relation proposals@{:d}".format(limit))
