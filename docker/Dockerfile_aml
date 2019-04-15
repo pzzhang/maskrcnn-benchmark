@@ -56,4 +56,4 @@ ENV FORCE_CUDA=${FORCE_CUDA}
 # WORKDIR /maskrcnn-benchmark
 
 RUN pip install -U pip
-RUN pip install future progressbar tqdm
+RUN pip install future progressbar tqdm tensorboardx tensorboard tensorflow joblib

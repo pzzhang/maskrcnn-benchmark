@@ -9,6 +9,9 @@ import torch
 from maskrcnn_benchmark.structures.bounding_box import BoxList
 from maskrcnn_benchmark.structures.boxlist_ops import boxlist_iou, getUnionBBox
 import pdb
+from joblib import Parallel, delayed
+import multiprocessing
+
 
 def do_vg_evaluation(dataset, predictions, output_folder, box_only, eval_attributes, logger, save_predictions=False):
     # TODO need to make the use_07_metric format available
@@ -27,7 +30,7 @@ def do_vg_evaluation(dataset, predictions, output_folder, box_only, eval_attribu
             for limit in limits:
                 logger.info("Evaluating bbox proposals@{:d}".format(limit))
                 stats = evaluate_box_proposals(
-                    predictions, dataset, area=area, limit=limit
+                    predictions, dataset, logger=logger, area=area, limit=limit
                 )
                 key_ar = "AR{}@{:d}".format(suffix, limit)
                 result[key_ar] = stats["ar"].item()
@@ -37,21 +40,19 @@ def do_vg_evaluation(dataset, predictions, output_folder, box_only, eval_attribu
                 # result[key_recalls] = stats["recalls"]
                 print(key_ar, "ar={:.4f}".format(result[key_ar]))
                 print(key_num_pos, "num_pos={:d}".format(result[key_num_pos]))
-                if not (limit==1000):
-                    # relation @ 1000 (all and large) takes about 2 hs to compute
-                    # relation pair evaluation
-                    logger.info("Evaluating relation proposals@{:d}".format(limit))
-                    stats = evaluate_box_proposals_for_relation(
-                        predictions, dataset, area=area, limit=limit
-                    )
-                    key_ar = "AR{}@{:d}_for_relation".format(suffix, limit)
-                    result[key_ar] = stats["ar"].item()
-                    key_num_pos = "num_pos{}@{:d}_for_relation".format(suffix, limit)
-                    result[key_num_pos] = stats["num_pos"]
-                    # key_recalls = "Recalls{}@{:d}_for_relation".format(suffix, limit)
-                    # result[key_recalls] = stats["recalls"]
-                    print(key_ar, "ar={:.4f}".format(result[key_ar]))
-                    print(key_num_pos, "num_pos={:d}".format(result[key_num_pos]))
+                # relation pair evaluation
+                logger.info("Evaluating relation proposals@{:d}".format(limit))
+                stats = evaluate_box_proposals_for_relation(
+                    predictions, dataset, logger=logger, area=area, limit=limit
+                )
+                key_ar = "AR{}@{:d}_for_relation".format(suffix, limit)
+                result[key_ar] = stats["ar"].item()
+                key_num_pos = "num_pos{}@{:d}_for_relation".format(suffix, limit)
+                result[key_num_pos] = stats["num_pos"]
+                # key_recalls = "Recalls{}@{:d}_for_relation".format(suffix, limit)
+                # result[key_recalls] = stats["recalls"]
+                print(key_ar, "ar={:.4f}".format(result[key_ar]))
+                print(key_num_pos, "num_pos={:d}".format(result[key_num_pos]))
         logger.info(result)
         # check_expected_results(result, expected_results, expected_results_sigma_tol)
         if output_folder and save_predictions:
@@ -394,7 +395,7 @@ def calc_detection_voc_ap(prec, rec, use_07_metric=False):
 
 # inspired from Detectron
 def evaluate_box_proposals(
-    predictions, dataset, thresholds=None, area="all", limit=None
+    predictions, dataset, logger, thresholds=None, area="all", limit=None
 ):
     """Evaluate detection proposal recall metrics. This function is a much
     faster alternative to the official COCO API recall evaluation code. However,
@@ -424,10 +425,10 @@ def evaluate_box_proposals(
     ]  # 512-inf
     assert area in areas, "Unknown area range: {}".format(area)
     area_range = area_ranges[areas[area]]
-    gt_overlaps = []
-    num_pos = 0
 
-    for image_id, prediction in enumerate(predictions):
+    def evaluate_box_proposals_for_single_image(image_id, prediction):
+        logger.info("{:d}".format(image_id))
+        print(image_id)
         img_info = dataset.get_img_info(image_id)
         image_width = img_info["width"]
         image_height = img_info["height"]
@@ -440,20 +441,20 @@ def evaluate_box_proposals(
         gt_areas = gt_boxes.area()
 
         if len(gt_boxes) == 0:
-            continue
+            return 0, torch.zeros(len(gt_boxes))
 
         valid_gt_inds = (gt_areas >= area_range[0]) & (gt_areas <= area_range[1])
         gt_boxes = gt_boxes[valid_gt_inds]
 
-        num_pos += len(gt_boxes)
+        num_pos = len(gt_boxes)
 
         if len(gt_boxes) == 0:
-            continue
+            return num_pos, torch.zeros(len(gt_boxes))
 
         # sort predictions in descending order
         # TODO maybe remove this and make it explicit in the documentation
         if len(prediction) == 0:
-            continue
+            return num_pos, torch.zeros(len(gt_boxes))
         if "objectness" in prediction.extra_fields:
             inds = prediction.get_field("objectness").sort(descending=True)[1]
         elif "scores" in prediction.extra_fields:
@@ -465,6 +466,7 @@ def evaluate_box_proposals(
         if limit is not None and len(prediction) > limit:
             prediction = prediction[:limit]
 
+        # deal with overlap
         overlaps = boxlist_iou(prediction, gt_boxes)
 
         _gt_overlaps = torch.zeros(len(gt_boxes))
@@ -485,8 +487,16 @@ def evaluate_box_proposals(
             overlaps[box_ind, :] = -1
             overlaps[:, gt_ind] = -1
 
-        # append recorded iou coverage level
-        gt_overlaps.append(_gt_overlaps)
+        return num_pos, _gt_overlaps
+
+    num_cores = multiprocessing.cpu_count()
+    print('Parallel computing in use... CPU count: %d'%(num_cores))
+    res = Parallel(n_jobs=num_cores) (delayed(evaluate_box_proposals_for_single_image) (image_id, prediction) \
+        for image_id, prediction in enumerate(predictions))
+    num_pos_list = [item[0] for item in res]
+    gt_overlaps = [item[1] for item in res]
+
+    num_pos = sum(num_pos_list)
     gt_overlaps = torch.cat(gt_overlaps, dim=0)
     gt_overlaps, _ = torch.sort(gt_overlaps)
 
@@ -510,7 +520,7 @@ def evaluate_box_proposals(
 
 # inspired from Detectron
 def evaluate_box_proposals_for_relation(
-    predictions, dataset, thresholds=None, area="all", limit=None
+    predictions, dataset, logger, thresholds=None, area="all", limit=None
 ):
     """Evaluate how many relation pairs can be captured by the proposed boxes.
     """
@@ -538,10 +548,10 @@ def evaluate_box_proposals_for_relation(
     ]  # 512-inf
     assert area in areas, "Unknown area range: {}".format(area)
     area_range = area_ranges[areas[area]]
-    gt_overlaps = []
-    num_pos = 0
 
-    for image_id, prediction in enumerate(predictions):
+    def evaluate_box_proposals_for_relation_for_single_image(image_id, prediction):
+        logger.info("{:d}".format(image_id))
+        print(image_id)
         img_info = dataset.get_img_info(image_id)
         image_width = img_info["width"]
         image_height = img_info["height"]
@@ -552,7 +562,7 @@ def evaluate_box_proposals_for_relation(
         # filter out the field "relations"
         gt_triplets = gt_boxes.get_field("relations")
         if len(gt_triplets) == 0:
-            continue
+            return 0, torch.zeros(0)
         gt_boxes = gt_boxes.copy_with_fields(['attributes', 'labels'])
         # get union bounding boxes (the box that cover both)
         gt_relations = getUnionBBox(gt_boxes[gt_triplets[:,0]], gt_boxes[gt_triplets[:,2]], margin=0)
@@ -562,15 +572,15 @@ def evaluate_box_proposals_for_relation(
         valid_gt_inds = (gt_relation_areas >= area_range[0]) & (gt_relation_areas <= area_range[1])
         gt_relations = gt_relations[valid_gt_inds]
 
-        num_pos += len(gt_relations)
+        num_pos = len(gt_relations)
 
         if len(gt_relations) == 0:
-            continue
+            return num_pos, torch.zeros(len(gt_relations))
 
         # sort predictions in descending order and limit to the number we specify
         # TODO maybe remove this and make it explicit in the documentation
         if len(prediction) == 0:
-            continue
+            return num_pos, torch.zeros(len(gt_relations))
         if "objectness" in prediction.extra_fields:
             inds = prediction.get_field("objectness").sort(descending=True)[1]
         elif "scores" in prediction.extra_fields:
@@ -592,8 +602,9 @@ def evaluate_box_proposals_for_relation(
         # get anchor_relations
         # anchor_relations = getUnionBBox(prediction[anchor_pairs[:,0]], prediction[anchor_pairs[:,1]], margin=0)
         if len(anchor_pairs) == 0:
-            continue
+            return num_pos, torch.zeros(len(gt_relations))
 
+        # deal with overlap
         overlaps_sub = boxlist_iou(prediction[anchor_pairs[:,0]], gt_boxes[gt_triplets[valid_gt_inds,0]])
         overlaps_obj = boxlist_iou(prediction[anchor_pairs[:,1]], gt_boxes[gt_triplets[valid_gt_inds,2]])
         overlaps = torch.min(overlaps_sub, overlaps_obj)
@@ -616,8 +627,17 @@ def evaluate_box_proposals_for_relation(
             overlaps[pair_ind, :] = -1
             overlaps[:, gt_ind] = -1
 
-        # append recorded iou coverage level
-        gt_overlaps.append(_gt_overlaps)
+        # return
+        return num_pos, _gt_overlaps
+
+    num_cores = multiprocessing.cpu_count()
+    print('Parallel computing in use... CPU count: %d'%(num_cores))
+    res = Parallel(n_jobs=num_cores) (delayed(evaluate_box_proposals_for_relation_for_single_image) (image_id, prediction) \
+        for image_id, prediction in enumerate(predictions))
+    num_pos_list = [item[0] for item in res]
+    gt_overlaps = [item[1] for item in res]
+
+    num_pos = sum(num_pos_list)
     gt_overlaps = torch.cat(gt_overlaps, dim=0)
     gt_overlaps, _ = torch.sort(gt_overlaps)
 
