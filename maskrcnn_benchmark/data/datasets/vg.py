@@ -11,7 +11,7 @@ else:
     from io import BytesIO as StringIO
 import numpy as np
 import json
-from maskrcnn_benchmark.structures.tsv_io import TSVFile, generate_lineidx
+from maskrcnn_benchmark.structures.tsv_io import TSVFile
 from maskrcnn_benchmark.structures.io_common import img_from_base64
 
 if sys.version_info[0] == 2:
