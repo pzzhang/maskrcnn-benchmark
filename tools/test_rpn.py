@@ -171,7 +171,7 @@ def main():
         synchronize()
 
     if is_main_process():
-        results = {**result_rpn, **result_obj, **result_attr}
+        results = {**result_rpn}
         print(results)
 
 
